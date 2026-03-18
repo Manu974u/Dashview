@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Android build artifacts
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/app/debug.keystore
+
+# iOS (not in scope but conventional)
+ios/Pods/
+ios/build/
+
+# React Native
+.metro-health-check*
+.react-native-cache/
+
+# Editor & OS
+.DS_Store
+*.orig
+*.iml
+.idea/
+.vscode/
+
+# Env & secrets
+.env
+.env.*
+
+# Claude Code local settings
+.claude/settings.local.json
