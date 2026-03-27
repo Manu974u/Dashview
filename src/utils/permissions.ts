@@ -23,7 +23,7 @@ export async function requestCameraPermission(): Promise<PermissionResult> {
   return requestPermission(PermissionsAndroid.PERMISSIONS.CAMERA, {
     title: 'Camera Permission',
     message:
-      'DashView needs camera access to record your drive continuously in the background.',
+      'DashViewCar needs camera access to record your drive continuously in the background.',
     buttonPositive: 'Allow Camera',
     buttonNegative: 'Deny',
   });
@@ -33,7 +33,7 @@ export async function requestMicrophonePermission(): Promise<PermissionResult> {
   return requestPermission(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
     title: 'Microphone Permission',
     message:
-      'DashView uses the microphone to listen for the wake word "Dash" so you can save clips hands-free while driving.',
+      'DashViewCar uses the microphone to listen for the wake word "Dash" so you can save clips hands-free while driving.',
     buttonPositive: 'Allow Microphone',
     buttonNegative: 'Deny',
   });
@@ -45,7 +45,7 @@ export async function requestLocationPermission(): Promise<PermissionResult> {
     {
       title: 'Location Permission',
       message:
-        'DashView uses GPS to record your speed and coordinates when a clip is saved.',
+        'DashViewCar uses GPS to record your speed and coordinates when a clip is saved.',
       buttonPositive: 'Allow Location',
       buttonNegative: 'Deny',
     },
@@ -60,7 +60,7 @@ export async function requestLocationPermission(): Promise<PermissionResult> {
       {
         title: 'Background Location',
         message:
-          'Allow DashView to access your location in the background so speed data is available even with the screen off.',
+          'Allow DashViewCar to access your location in the background so speed data is available even with the screen off.',
         buttonPositive: 'Allow Always',
         buttonNegative: 'Deny',
       },
@@ -80,7 +80,7 @@ export async function requestStoragePermission(): Promise<PermissionResult> {
     {
       title: 'Storage Permission',
       message:
-        'DashView needs storage access to save video clips to your device.',
+        'DashViewCar needs storage access to save video clips to your device.',
       buttonPositive: 'Allow Storage',
       buttonNegative: 'Deny',
     },

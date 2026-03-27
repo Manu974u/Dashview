@@ -1,5 +1,5 @@
 /**
- * DashView — Android Dashcam Prototype
+ * DashViewCar — Android Dashcam App
  * React Native 0.73 bare workflow
  *
  * TODO: Custom wake word (premium feature)

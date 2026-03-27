@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   Dimensions,
   FlatList,
   Alert,
+  ScrollView,
+  NativeModules,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import {colors} from '../theme/colors';
 import {spacing, borderRadius} from '../theme/spacing';
@@ -17,6 +21,7 @@ import {
   requestStoragePermission,
 } from '../utils/permissions';
 import {useAppStore} from '../store/useAppStore';
+import {useTranslation} from '../i18n/useTranslation';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -27,35 +32,66 @@ interface Slide {
   emoji: string;
 }
 
-const SLIDES: Slide[] = [
-  {
-    id: '1',
-    emoji: '📱',
-    title: 'Your phone.\nYour dashcam.',
-    body: 'DashView records everything, silently, in the background.',
-  },
-  {
-    id: '2',
-    emoji: '🎤',
-    title: 'Just say "Dash"',
-    body: 'One word saves the last 60 seconds. No buttons. No distraction.',
-  },
-  {
-    id: '3',
-    emoji: '⚡',
-    title: 'Sudden stop?\nWe\'ve got it.',
-    body: 'Enable speed drop detection and DashView saves automatically if it detects a sudden deceleration — like in a collision.',
-  },
-];
-
 export default function OnboardingScreen(): React.JSX.Element {
+  const {t} = useTranslation();
+
+  const SLIDES: Slide[] = [
+    {
+      id: '1',
+      emoji: '📱',
+      title: t('onboarding.slide1Title'),
+      body: t('onboarding.slide1Body'),
+    },
+    {
+      id: '2',
+      emoji: '🎤',
+      title: t('onboarding.slide2Title'),
+      body: t('onboarding.slide2Body'),
+    },
+    {
+      id: '3',
+      emoji: '🛡',
+      title: t('onboarding.slide3Title'),
+      body: t('onboarding.slide3Body'),
+    },
+  ];
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [requestingPermissions, setRequestingPermissions] = useState(false);
+  // 'initial' = standard permission slide; 'overlay' = Display over other apps step
+  const [permPhase, setPermPhase] = useState<'initial' | 'overlay'>('initial');
+  const [overlayGranted, setOverlayGranted] = useState<boolean | null>(null);
+  const [requestingOverlay, setRequestingOverlay] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const setOnboardingComplete = useAppStore(s => s.setOnboardingComplete);
 
-  const isLastSlide = currentIndex === SLIDES.length;
-  const isPermissionSlide = isLastSlide;
+  const isPermissionSlide = currentIndex === SLIDES.length;
+
+  // Check overlay permission and re-check when app returns from settings.
+  const checkOverlay = useCallback(async () => {
+    try {
+      const granted: boolean =
+        await NativeModules.DashSpeech?.checkOverlayPermission?.();
+      setOverlayGranted(granted ?? false);
+      return granted ?? false;
+    } catch {
+      setOverlayGranted(false);
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (permPhase !== 'overlay') return;
+    checkOverlay();
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (appStateRef.current !== 'active' && next === 'active') {
+        checkOverlay(); // user returned from system settings
+      }
+      appStateRef.current = next;
+    });
+    return () => sub.remove();
+  }, [permPhase, checkOverlay]);
 
   function goNext() {
     if (currentIndex < SLIDES.length) {
@@ -72,108 +108,139 @@ export default function OnboardingScreen(): React.JSX.Element {
     try {
       const cam = await requestCameraPermission();
       if (cam !== 'granted') {
-        Alert.alert(
-          'Camera required',
-          'Camera access is required to record your drive.',
-        );
+        Alert.alert(t('onboarding.permCameraRequired'), t('onboarding.permCameraRequiredDesc'));
         return;
       }
 
       const mic = await requestMicrophonePermission();
       if (mic !== 'granted') {
-        Alert.alert(
-          'Microphone required',
-          'Microphone access is required for voice wake word detection.',
-        );
+        Alert.alert(t('onboarding.permMicRequired'), t('onboarding.permMicRequiredDesc'));
         return;
       }
 
       const loc = await requestLocationPermission();
       if (loc !== 'granted') {
-        Alert.alert(
-          'Location required',
-          'Location access is required to record GPS coordinates and speed.',
-        );
+        Alert.alert(t('onboarding.permLocationRequired'), t('onboarding.permLocationRequiredDesc'));
         return;
       }
 
       await requestStoragePermission();
 
-      // All essential permissions granted
-      setOnboardingComplete(true);
+      // Move to the overlay permission step
+      setPermPhase('overlay');
     } finally {
       setRequestingPermissions(false);
     }
   }
 
-  return (
-    <View style={styles.container}>
-      {!isPermissionSlide ? (
-        <>
-          <FlatList
-            ref={listRef}
-            data={SLIDES}
-            keyExtractor={item => item.id}
-            horizontal
-            pagingEnabled
-            scrollEnabled={false}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({item}) => (
-              <View style={styles.slide}>
-                <Text style={styles.emoji}>{item.emoji}</Text>
-                <Text style={styles.slideTitle}>{item.title}</Text>
-                <Text style={styles.slideBody}>{item.body}</Text>
-              </View>
-            )}
-          />
+  async function handleGrantOverlay() {
+    setRequestingOverlay(true);
+    try {
+      await NativeModules.DashSpeech?.requestOverlayPermission?.();
+      // AppState listener will re-check when user returns from settings
+    } catch (e: any) {
+      console.warn('[Onboarding] overlay settings error:', e?.message ?? e);
+    } finally {
+      setRequestingOverlay(false);
+    }
+  }
 
-          {/* Dots */}
-          <View style={styles.dots}>
-            {SLIDES.map((_, i) => (
-              <View
-                key={i}
-                style={[styles.dot, i === currentIndex && styles.dotActive]}
-              />
-            ))}
-          </View>
+  async function handleContinue() {
+    const granted = await checkOverlay();
+    if (granted) {
+      setOnboardingComplete(true);
+    } else {
+      Alert.alert(t('onboarding.overlayNotYetTitle'), t('onboarding.overlayNotYetBody'));
+    }
+  }
+
+  function handleSkip() {
+    setOnboardingComplete(true);
+  }
+
+  // ── Overlay permission phase ──────────────────────────────────────────────
+  if (isPermissionSlide && permPhase === 'overlay') {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          <Text style={styles.permEmoji}>📱</Text>
+          <Text style={styles.permTitle}>{t('onboarding.overlayTitle')}</Text>
+          <Text style={styles.permBody}>{t('onboarding.overlayBody')}</Text>
+
+          {overlayGranted === true ? (
+            <View style={styles.grantedBadge}>
+              <Text style={styles.grantedBadgeText}>{t('onboarding.overlayGranted')}</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.nextBtn, requestingOverlay && styles.btnDisabled]}
+              onPress={handleGrantOverlay}
+              disabled={requestingOverlay}
+              activeOpacity={0.8}>
+              <Text style={styles.nextBtnText}>
+                {requestingOverlay ? t('onboarding.overlayGranting') : t('onboarding.overlayGrantBtn')}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
-            style={styles.nextBtn}
-            onPress={goNext}
+            style={[styles.nextBtn, {marginTop: spacing.sm}]}
+            onPress={overlayGranted === true ? () => setOnboardingComplete(true) : handleContinue}
             activeOpacity={0.8}>
             <Text style={styles.nextBtnText}>
-              {currentIndex === SLIDES.length - 1 ? 'Get started' : 'Next'}
+              {overlayGranted === true ? t('common.getStarted') : t('common.continue')}
             </Text>
           </TouchableOpacity>
-        </>
-      ) : (
-        <View style={styles.permissionSlide}>
+
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={handleSkip}
+            activeOpacity={0.7}>
+            <Text style={styles.skipBtnText}>{t('onboarding.overlaySkip')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── Standard permission slide ─────────────────────────────────────────────
+  if (isPermissionSlide) {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
           <Text style={styles.permEmoji}>🔐</Text>
-          <Text style={styles.permTitle}>Permissions required</Text>
-          <Text style={styles.permBody}>
-            DashView needs the following permissions to work properly.
-          </Text>
+          <Text style={styles.permTitle}>{t('onboarding.permTitle')}</Text>
+          <Text style={styles.permBody}>{t('onboarding.permBody')}</Text>
 
           <View style={styles.permList}>
             <PermissionRow
               icon="📷"
-              title="Camera"
-              desc="Records your drive in continuous loop"
+              title={t('onboarding.permCamera')}
+              desc={t('onboarding.permCameraDesc')}
             />
             <PermissionRow
               icon="🎤"
-              title="Microphone"
-              desc="Detects the 'Dash' wake word while driving"
+              title={t('onboarding.permMic')}
+              desc={t('onboarding.permMicDesc')}
             />
             <PermissionRow
               icon="📍"
-              title="Location (Always)"
-              desc="Records GPS and speed when a clip is saved"
+              title={t('onboarding.permLocation')}
+              desc={t('onboarding.permLocationDesc')}
             />
             <PermissionRow
               icon="💾"
-              title="Storage"
-              desc="Saves video clips to your device"
+              title={t('onboarding.permStorage')}
+              desc={t('onboarding.permStorageDesc')}
+            />
+            <PermissionRow
+              icon="📱"
+              title={t('onboarding.permOverlay')}
+              desc={t('onboarding.permOverlayDesc')}
             />
           </View>
 
@@ -183,14 +250,56 @@ export default function OnboardingScreen(): React.JSX.Element {
             disabled={requestingPermissions}
             activeOpacity={0.8}>
             <Text style={styles.nextBtnText}>
-              {requestingPermissions ? 'Requesting...' : 'Allow permissions'}
+              {requestingPermissions ? t('onboarding.permRequesting') : t('onboarding.permAllowBtn')}
             </Text>
           </TouchableOpacity>
-        </View>
-      )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── Intro slides ──────────────────────────────────────────────────────────
+  return (
+    <View style={styles.container}>
+      <FlatList
+        ref={listRef}
+        data={SLIDES}
+        keyExtractor={item => item.id}
+        horizontal
+        pagingEnabled
+        scrollEnabled={false}
+        showsHorizontalScrollIndicator={false}
+        renderItem={({item}) => (
+          <View style={styles.slide}>
+            <Text style={styles.emoji}>{item.emoji}</Text>
+            <Text style={styles.slideTitle}>{item.title}</Text>
+            <Text style={styles.slideBody}>{item.body}</Text>
+          </View>
+        )}
+      />
+
+      <View style={styles.dots}>
+        {SLIDES.map((_, i) => (
+          <View
+            key={i}
+            style={[styles.dot, i === currentIndex && styles.dotActive]}
+          />
+        ))}
+      </View>
+
+      <TouchableOpacity
+        style={styles.nextBtn}
+        onPress={goNext}
+        activeOpacity={0.8}>
+        <Text style={styles.nextBtnText}>
+          {currentIndex === SLIDES.length - 1 ? t('common.getStarted') : t('common.next')}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function PermissionRow({
   icon,
@@ -212,13 +321,22 @@ function PermissionRow({
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.xxl,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 64,
+    paddingBottom: spacing.xxl,
+    alignItems: 'stretch',
+  },
+
+  // ── Intro slides ──────────────────────────────────────────────────────────
   slide: {
     width: SCREEN_WIDTH,
     flex: 1,
@@ -226,10 +344,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingTop: 80,
+    paddingBottom: 160, // leave room for dots + button
   },
   emoji: {
     fontSize: 72,
     marginBottom: spacing.lg,
+    textAlign: 'center',
   },
   slideTitle: {
     color: colors.textPrimary,
@@ -269,6 +389,7 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   btnDisabled: {
     opacity: 0.5,
@@ -279,12 +400,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  permissionSlide: {
-    flex: 1,
-    paddingHorizontal: spacing.xl,
-    paddingTop: 80,
-    justifyContent: 'center',
-  },
+
+  // ── Permission slides ──────────────────────────────────────────────────────
   permEmoji: {
     fontSize: 56,
     textAlign: 'center',
@@ -305,7 +422,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   permList: {
-    gap: spacing.md,
+    gap: spacing.sm,
     marginBottom: spacing.xl,
   },
   permRow: {
@@ -317,7 +434,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   permRowIcon: {
-    fontSize: 24,
+    fontSize: 22,
   },
   permRowText: {
     flex: 1,
@@ -331,6 +448,33 @@ const styles = StyleSheet.create({
   permRowDesc: {
     color: colors.textSecondary,
     fontSize: 13,
+    lineHeight: 18,
+  },
+
+  // ── Overlay phase ──────────────────────────────────────────────────────────
+  grantedBadge: {
+    backgroundColor: '#1B5E2015',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: '#1B5E2040',
+  },
+  grantedBadgeText: {
+    color: '#1B5E20',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  skipBtn: {
+    marginTop: spacing.sm,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  skipBtnText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    textAlign: 'center',
     lineHeight: 18,
   },
 });

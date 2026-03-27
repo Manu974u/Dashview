@@ -50,11 +50,14 @@ class DashViewForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "DashView Recording",
-                NotificationManager.IMPORTANCE_LOW,
+                "DashViewCar Recording",
+                NotificationManager.IMPORTANCE_LOW,  // status bar icon, no sound
             ).apply {
-                description = "Shown while DashView is recording in the background"
+                description = "Shown while DashViewCar is recording in the background"
                 setShowBadge(false)
+                setSound(null, null)            // no notification sound
+                enableVibration(false)          // no vibration
+                enableLights(false)             // no LED blink
             }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -71,8 +74,8 @@ class DashViewForegroundService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("DashView is active")
-            .setContentText("Recording in background")
+            .setContentTitle("DashViewCar is active")
+            .setContentText("DashViewCar listening — ~3% battery/hour")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
             .setOngoing(true)

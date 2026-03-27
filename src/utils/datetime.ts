@@ -34,5 +34,5 @@ export function formatDuration(seconds: number): string {
  * Builds the clip filename including trigger type
  */
 export function buildClipFilename(trigger: 'voice' | 'impact'): string {
-  return `DashView_${getFilenameTimestamp()}_${trigger}.mp4`;
+  return `DashViewCar_${getFilenameTimestamp()}_${trigger}.mp4`;
 }

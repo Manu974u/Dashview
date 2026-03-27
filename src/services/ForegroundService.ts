@@ -1,33 +1,47 @@
 /**
  * ForegroundService.ts
- * Manages the Android Foreground Service that keeps recording alive
- * while the screen is off, using react-native-background-actions.
+ *
+ * Manages the Android Foreground Service (notification + keeps process alive).
+ *
+ * IMPORTANT: This service does NOT start/stop VoskService.
+ * VoskService is managed exclusively by HomeScreen (activateVoice / deactivateVoice).
+ * This was the root cause of 8 concurrent GoogleTTSRecognitionService connections:
+ * both backgroundTask and activateVoice() were calling VoskService.start(),
+ * but VoskService.stop() was only calling DashSpeech.stop() (not destroy()),
+ * so connections accumulated with every toggle.
+ *
+ * This service ONLY:
+ *   1. Shows the persistent notification (required for foreground service)
+ *   2. Keeps the React Native JS engine alive in the background
+ *      so VoskService's setTimeout restart loop keeps running
  */
 import BackgroundActions from 'react-native-background-actions';
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 /**
- * Task executed inside the foreground service.
- * Keeps the service alive; actual recording is driven by RecordingService.
+ * Background task — just keeps the foreground service alive.
+ * VoskService is started before this and continues running because
+ * this task keeps the JS engine alive.
  */
 const backgroundTask = async (_taskData: unknown) => {
-  // Run indefinitely — the foreground service is stopped via stopService()
+  console.log('[ForegroundService] background task started — keeping process alive');
   while (BackgroundActions.isRunning()) {
     await sleep(10_000);
   }
+  console.log('[ForegroundService] background task ended');
 };
 
 const serviceOptions = {
-  taskName: 'DashViewRecording',
-  taskTitle: 'DashView is active',
-  taskDesc: 'Recording in background',
+  taskName: 'DashViewCarListening',
+  taskTitle: 'DashViewCar is active',
+  taskDesc: "Say 'Dash' to save a clip",
   taskIcon: {
     name: 'ic_launcher',
     type: 'mipmap',
   },
-  color: '#E53935',
-  linkingURI: 'dashview://home',
+  color: '#1E88E5',
+  linkingURI: 'dashviewcar://home',
   parameters: {},
 };
 

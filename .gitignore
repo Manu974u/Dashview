@@ -7,6 +7,8 @@ android/app/build/
 android/build/
 android/local.properties
 android/app/debug.keystore
+android/app/dashview-release.keystore
+android/keystore.properties
 
 # iOS (not in scope but conventional)
 ios/Pods/

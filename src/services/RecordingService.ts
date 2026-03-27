@@ -1,270 +1,182 @@
 /**
  * RecordingService.ts
- * Manages the circular-buffer loop recording.
- *
- * Strategy:
- * - Records 10-second segments using react-native-vision-camera
- * - Keeps the last 6 segments in a rolling buffer (= 60 s of footage)
- * - On save: stops the in-progress segment to flush it, snapshots the buffer,
- *   resumes recording immediately (no gap), then merges in the background
- *   using ffmpeg-kit-react-native with -f concat -c copy (fast, lossless).
+ * Manages triggered 60-second recording sessions.
  */
-
-import {Camera, VideoFile} from 'react-native-vision-camera';
-import RNFS from 'react-native-fs';
-import {FFmpegKit, ReturnCode} from 'ffmpeg-kit-react-native';
+import {Platform, ToastAndroid, Alert, NativeModules} from 'react-native';
+import {Camera} from 'react-native-vision-camera';
 import {useAppStore} from '../store/useAppStore';
 import {getCurrentGps} from './LocationService';
 import {buildClipFilename} from '../utils/datetime';
+import {saveClip, ensureClipsDir, enforceClipLimit} from './ClipStorageService';
 
-export const SEGMENT_DURATION_SECONDS = 10;
-export const MAX_SEGMENTS = 6; // 6 × 10 s = 60 s
-
-interface SegmentRecord {
-  path: string;
-  startedAt: number; // ms timestamp
-}
+const RECORDING_DURATION_SECONDS = 60;
 
 class RecordingServiceClass {
   private cameraRef: Camera | null = null;
-  private segments: SegmentRecord[] = [];
   private isRecording = false;
-  private isSaving = false;
-  private segmentTimer: ReturnType<typeof setTimeout> | null = null;
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
+  private customSaveMessage: string | null = null;
 
-  setCameraRef(ref: Camera | null) {
+  /** Override the default "Clip saved ✅" toast for the next save (DEV use). */
+  setCustomSaveMessage(msg: string | null): void {
+    this.customSaveMessage = msg;
+  }
+
+  setCameraRef(ref: Camera | null): void {
     this.cameraRef = ref;
   }
 
-  /** Start the loop recording. */
-  async start(): Promise<void> {
+  async triggerRecording(trigger: 'voice' | 'impact'): Promise<void> {
     if (this.isRecording) {
       return;
     }
+    if (!this.cameraRef) {
+      throw new Error('Camera not ready — camera must be mounted before recording.');
+    }
+
     this.isRecording = true;
-    useAppStore.getState().setRecording(true);
-    await this.recordNextSegment();
+    const store = useAppStore.getState();
+    store.setMode('recording');
+    store.setRecordingTrigger(trigger);
+    store.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
+
+    // Acquire WakeLock for recording duration (released in saveClip finally block).
+    NativeModules.DashSpeech?.acquireWakeLock?.()?.catch?.((e: any) =>
+      console.warn('[RecordingService] acquireWakeLock failed:', e?.message ?? e),
+    );
+
+    let secondsLeft = RECORDING_DURATION_SECONDS;
+    this.countdownInterval = setInterval(() => {
+      secondsLeft -= 1;
+      useAppStore.getState().setRecordingSecondsLeft(secondsLeft);
+      if (secondsLeft <= 0) {
+        this.stopAndSave().catch(e =>
+          console.warn('[RecordingService] stopAndSave error:', e?.message ?? e),
+        );
+      }
+    }, 1_000);
+
+    try {
+      this.cameraRef.startRecording({
+        fileType: 'mp4',
+        videoCodec: 'h264',      // most efficient on Android hardware encoders
+        videoBitRate: 4_000_000, // 4 Mbps — good quality, reasonable file size
+        onRecordingFinished: video => {
+          console.log('[RecordingService] onRecordingFinished — path:', video.path);
+          this.saveClip(video.path, trigger).catch(e =>
+            console.warn('[RecordingService] saveClip error:', e?.message ?? e),
+          );
+        },
+        onRecordingError: err => {
+          console.warn('[RecordingService] onRecordingError:', err);
+          this.clearTimers();
+          this.isRecording = false;
+          const s = useAppStore.getState();
+          s.setMode('listening');
+          s.setRecordingTrigger(null);
+          s.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
+          Alert.alert('Recording Error', `Camera recording failed: ${err?.message ?? err}`);
+        },
+      });
+    } catch (e: any) {
+      this.clearTimers();
+      this.isRecording = false;
+      const s = useAppStore.getState();
+      s.setMode('listening');
+      s.setRecordingTrigger(null);
+      s.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
+      throw e;
+    }
   }
 
-  /** Stop all recording cleanly. */
-  async stop(): Promise<void> {
-    this.isRecording = false;
-    if (this.segmentTimer) {
-      clearTimeout(this.segmentTimer);
-      this.segmentTimer = null;
+  async stopEarly(): Promise<void> {
+    if (!this.isRecording) {
+      return;
     }
+    this.clearTimers();
+    try {
+      await this.cameraRef?.stopRecording();
+    } catch (e: any) {
+      console.warn('[RecordingService] stopEarly error:', e?.message ?? e);
+    }
+  }
+
+  private async stopAndSave(): Promise<void> {
+    this.clearTimers();
     try {
       await this.cameraRef?.stopRecording();
     } catch {
-      // Ignore if already stopped
-    }
-    useAppStore.getState().setRecording(false);
-  }
-
-  /**
-   * Records one 10-second segment, then rotates the buffer.
-   * Called recursively to maintain the loop.
-   */
-  private async recordNextSegment(): Promise<void> {
-    if (!this.isRecording || !this.cameraRef) {
-      return;
-    }
-
-    this.cameraRef.startRecording({
-      fileType: 'mp4',
-      onRecordingFinished: (video: VideoFile) => {
-        this.onSegmentFinished(video.path);
-      },
-      onRecordingError: _error => {
-        if (this.isRecording) {
-          setTimeout(() => this.recordNextSegment(), 1_000);
-        }
-      },
-    });
-
-    // Stop this segment after SEGMENT_DURATION_SECONDS
-    this.segmentTimer = setTimeout(async () => {
-      if (!this.isRecording) {
-        return;
-      }
-      try {
-        await this.cameraRef?.stopRecording();
-      } catch {
-        // Camera may have already been stopped externally
-      }
-    }, SEGMENT_DURATION_SECONDS * 1_000);
-  }
-
-  private onSegmentFinished(path: string): void {
-    this.segments.push({path, startedAt: Date.now()});
-
-    // Keep only the last MAX_SEGMENTS; evict and delete the oldest
-    if (this.segments.length > MAX_SEGMENTS) {
-      const evicted = this.segments.splice(0, this.segments.length - MAX_SEGMENTS);
-      for (const seg of evicted) {
-        RNFS.unlink(seg.path).catch(() => {});
-      }
-    }
-
-    useAppStore.getState().setSegments(this.segments.map(s => s.path));
-
-    if (this.isRecording) {
-      void this.recordNextSegment();
+      // stopRecording resolves via onRecordingFinished regardless
     }
   }
 
-  /**
-   * Saves the current buffer as a single merged clip.
-   *
-   * Flow:
-   * 1. Flush the in-progress segment (stopRecording).
-   * 2. Snapshot the segment paths + GPS metadata.
-   * 3. Resume recording immediately → no gap in the loop.
-   * 4. Merge the snapshotted segments with ffmpeg-kit in the background.
-   * 5. Persist the clip and clean up source segments.
-   *
-   * Returns the final clip filepath, or null on failure.
-   */
-  async saveClip(trigger: 'voice' | 'impact'): Promise<string | null> {
-    if (this.isSaving || this.segments.length === 0) {
-      return null;
+  private clearTimers(): void {
+    if (this.countdownInterval !== null) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
     }
-    this.isSaving = true;
+  }
 
-    // ── Step 1: flush the in-progress segment ──────────────────────────
-    const wasRecording = this.isRecording;
-    if (wasRecording) {
-      // Cancel the auto-stop timer so it doesn't fire mid-flush
-      if (this.segmentTimer) {
-        clearTimeout(this.segmentTimer);
-        this.segmentTimer = null;
-      }
-      this.isRecording = false; // prevent onSegmentFinished from restarting loop
-      try {
-        await this.cameraRef?.stopRecording();
-      } catch {
-        // Already stopped
-      }
-    }
+  private async saveClip(
+    tempPath: string,
+    trigger: 'voice' | 'impact',
+  ): Promise<void> {
+    this.isRecording = false;
+    this.clearTimers();
 
-    // ── Step 2: snapshot before resuming ───────────────────────────────
-    const segPaths = this.segments.map(s => s.path);
-    const segCount = segPaths.length;
+    const store = useAppStore.getState();
+    store.setMode('saving');
+
+    const filename = buildClipFilename(trigger);
+    const timestamp = new Date().toISOString();
+
     const gps = await getCurrentGps().catch(() => ({
       lat: 0,
       lng: 0,
       speedKmh: 0,
       timestamp: Date.now(),
     }));
-    const timestamp = new Date().toISOString();
-    const filename = buildClipFilename(trigger);
 
-    // ── Step 3: resume recording immediately ───────────────────────────
-    if (wasRecording) {
-      this.segments = [];
-      useAppStore.getState().setSegments([]);
-      this.isRecording = true;
-      useAppStore.getState().setRecording(true);
-      void this.recordNextSegment();
-    }
-
-    // ── Steps 4 & 5: merge + persist (background) ──────────────────────
     try {
-      const mergedPath = await this.mergeSegments(segPaths, filename);
+      await ensureClipsDir();
 
-      if (!mergedPath) {
-        return null;
-      }
-
-      const {saveClip, enforceClipLimit} = await import('./ClipStorageService');
-
-      const clip = await saveClip(mergedPath, filename, {
+      const clip = await saveClip(tempPath, filename, {
         trigger,
         timestamp,
         gps: {lat: gps.lat, lng: gps.lng},
         speedKmh: gps.speedKmh,
-        duration: segCount * SEGMENT_DURATION_SECONDS,
+        duration: RECORDING_DURATION_SECONDS,
       });
 
-      const store = useAppStore.getState();
-      store.addClip(clip);
-      await enforceClipLimit(store.clips);
+      const currentStore = useAppStore.getState();
+      currentStore.addClip(clip);
+      currentStore.setLastClipSavedAt(clip.timestamp);
+      await enforceClipLimit(useAppStore.getState().clips);
 
-      return clip.filepath;
-    } finally {
-      this.isSaving = false;
-      // Delete source segments now that they're merged (or merge failed)
-      for (const p of segPaths) {
-        RNFS.unlink(p).catch(() => {});
+      // Show success toast (Android only)
+      if (Platform.OS === 'android') {
+        const msg = this.customSaveMessage ?? 'Clip saved ✅';
+        this.customSaveMessage = null;
+        ToastAndroid.show(msg, ToastAndroid.LONG);
+      } else {
+        this.customSaveMessage = null;
       }
-    }
-  }
-
-  /**
-   * Merges multiple MP4 segments into one file using ffmpeg-kit-react-native.
-   *
-   * Uses the concat demuxer with -c copy (stream copy, no re-encoding).
-   * This is nearly instantaneous since it just concatenates the bitstream.
-   * -movflags +faststart moves the moov atom to the file start for proper playback.
-   *
-   * Single-segment shortcut: skips FFmpeg and copies directly.
-   */
-  private async mergeSegments(
-    segPaths: string[],
-    filename: string,
-  ): Promise<string | null> {
-    if (segPaths.length === 0) {
-      return null;
-    }
-
-    const tempOutput = `${RNFS.CachesDirectoryPath}/${filename}`;
-
-    // Fast path: only one segment, no concat needed
-    if (segPaths.length === 1) {
-      try {
-        await RNFS.copyFile(segPaths[0], tempOutput);
-        return tempOutput;
-      } catch {
-        return null;
-      }
-    }
-
-    // Write concat list: each line is  file '/absolute/path/to/seg.mp4'
-    const listContent = segPaths.map(p => `file '${p}'`).join('\n');
-    const listPath = `${RNFS.CachesDirectoryPath}/dashview_concat_list.txt`;
-
-    try {
-      await RNFS.writeFile(listPath, listContent, 'utf8');
-
-      const session = await FFmpegKit.execute(
-        `-f concat -safe 0 -i "${listPath}" -c copy -movflags +faststart "${tempOutput}"`,
+    } catch (e: any) {
+      console.warn('[RecordingService] saveClip storage error:', e?.message ?? e);
+      Alert.alert(
+        'Save Failed',
+        `Could not save clip: ${e?.message ?? 'Unknown error'}`,
       );
-
-      const returnCode = await session.getReturnCode();
-
-      if (ReturnCode.isSuccess(returnCode)) {
-        return tempOutput;
-      }
-
-      // Log FFmpeg output to help diagnose failures in dev builds
-      if (__DEV__) {
-        const output = await session.getOutput();
-        console.warn('[RecordingService] FFmpeg merge failed:', output);
-      }
-
-      return null;
-    } catch (e) {
-      if (__DEV__) {
-        console.warn('[RecordingService] FFmpeg error:', e);
-      }
-      return null;
     } finally {
-      RNFS.unlink(listPath).catch(() => {});
+      // Release WakeLock — CPU no longer needs to stay awake after save.
+      NativeModules.DashSpeech?.releaseWakeLock?.()?.catch?.((e: any) =>
+        console.warn('[RecordingService] releaseWakeLock failed:', e?.message ?? e),
+      );
+      const s = useAppStore.getState();
+      s.setMode('listening');
+      s.setRecordingTrigger(null);
+      s.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
     }
-  }
-
-  getSegments(): string[] {
-    return this.segments.map(s => s.path);
   }
 }
 

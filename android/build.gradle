@@ -2,14 +2,16 @@ buildscript {
     ext {
         buildToolsVersion = "34.0.0"
         minSdkVersion = 26          // Android 8.0 — required for foreground service camera
-        compileSdkVersion = 34
+        compileSdkVersion = 35
         targetSdkVersion = 34
         ndkVersion = "25.1.8937393"
         kotlinVersion = "1.9.0"
+        ffmpegKitPackage = "min"
     }
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://alphacephei.com/maven/' }
     }
     dependencies {
         classpath("com.android.tools.build:gradle:8.1.1")
@@ -19,3 +21,11 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://alphacephei.com/maven/' }
+    }
+}

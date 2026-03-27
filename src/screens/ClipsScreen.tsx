@@ -7,15 +7,19 @@ import {
   Modal,
   Share,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import {useAppStore, ClipMetadata} from '../store/useAppStore';
 import {loadClips, deleteClip} from '../services/ClipStorageService';
 import ClipCard from '../components/ClipCard';
 import ClipPlayer from '../components/ClipPlayer';
 import {colors} from '../theme/colors';
 import {spacing} from '../theme/spacing';
+import {useTranslation} from '../i18n/useTranslation';
 
 export default function ClipsScreen(): React.JSX.Element {
+  const {t} = useTranslation();
   const clips = useAppStore(s => s.clips);
   const setClips = useAppStore(s => s.setClips);
   const removeClip = useAppStore(s => s.removeClip);
@@ -26,9 +30,17 @@ export default function ClipsScreen(): React.JSX.Element {
     setClips(loaded);
   }, [setClips]);
 
+  // Load on mount
   useEffect(() => {
     fetchClips();
   }, [fetchClips]);
+
+  // Refresh every time the tab is focused (BUG 4: auto-refresh after new clip)
+  useFocusEffect(
+    useCallback(() => {
+      fetchClips();
+    }, [fetchClips]),
+  );
 
   async function handleDelete(clip: ClipMetadata) {
     await deleteClip(clip);
@@ -39,7 +51,7 @@ export default function ClipsScreen(): React.JSX.Element {
     try {
       await Share.share({
         url: `file://${clip.filepath}`,
-        message: `DashView clip — ${clip.timestamp}`,
+        message: t('clips.shareMessage', {timestamp: clip.timestamp}),
       });
     } catch {
       // Share cancelled
@@ -49,18 +61,14 @@ export default function ClipsScreen(): React.JSX.Element {
   function renderEmpty() {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>📹</Text>
-        <Text style={styles.emptyTitle}>No clips yet.</Text>
-        <Text style={styles.emptyBody}>
-          Say "Dash" or enable speed detection{'\n'}to auto-save clips.
-        </Text>
+        <Text style={styles.emptyIllustration}>📹</Text>
+        <Text style={styles.emptyTitle}>{t('clips.emptyTitle')}</Text>
+        <Text style={styles.emptyBody}>{t('clips.emptyBody')}</Text>
       </View>
     );
   }
 
-  function renderItem({item, index}: {item: ClipMetadata; index: number}) {
-    // Two-column grid: even index = left, odd = right
-    // We pair items manually via numColumns
+  function renderItem({item}: {item: ClipMetadata}) {
     return (
       <ClipCard
         clip={item}
@@ -73,9 +81,13 @@ export default function ClipsScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+
       <View style={styles.header}>
-        <Text style={styles.title}>Clips</Text>
-        <Text style={styles.count}>{clips.length} / 20</Text>
+        <Text style={styles.title}>{t('clips.title')}</Text>
+        {clips.length > 0 && (
+          <Text style={styles.count}>{clips.length} / 20</Text>
+        )}
       </View>
 
       <FlatList
@@ -88,9 +100,9 @@ export default function ClipsScreen(): React.JSX.Element {
         }
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
+        columnWrapperStyle={clips.length > 0 ? styles.columnWrapper : undefined}
       />
 
-      {/* Full-screen player modal */}
       <Modal
         visible={playingClip !== null}
         animationType="fade"
@@ -123,15 +135,19 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
   },
   count: {
     color: colors.textSecondary,
     fontSize: 14,
+    fontWeight: '500',
   },
   grid: {
     padding: spacing.sm,
+  },
+  columnWrapper: {
+    paddingHorizontal: spacing.xs,
   },
   emptyFlex: {
     flex: 1,
@@ -143,13 +159,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.xl,
   },
-  emptyIcon: {
-    fontSize: 56,
+  emptyIllustration: {
+    fontSize: 64,
     marginBottom: spacing.sm,
   },
   emptyTitle: {
     color: colors.textPrimary,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
   },

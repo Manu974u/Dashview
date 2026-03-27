@@ -21,8 +21,26 @@
     <!-- ─── Sensors ──────────────────────────────────────────────────── -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 
-    <!-- ─── Wake lock (keep CPU active during background recording) ─── -->
+    <!-- ─── Wake lock (keep CPU active during background listening) ─── -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- ─── Notifications (Android 13+ / API 33+) ────────────────────── -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ─── Foreground service type: location (API 34+ requirement) ─── -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- ─── Battery optimization exemption request ───────────────────── -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- ─── Bring app to foreground on voice trigger ────────────────────────── -->
+    <!-- USE_FULL_SCREEN_INTENT: normal (auto-granted) on Android 10-13;       -->
+    <!--   special (requires user grant) on Android 14+.                       -->
+    <!-- SYSTEM_ALERT_WINDOW: Android 12+ docs guarantee that apps granted     -->
+    <!--   this permission CAN start activities from background on ALL OEMs.   -->
+    <!--   Required for reliable foreground launch on Honor/Huawei/MIUI/etc.   -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <!-- ─── Hardware features ────────────────────────────────────────── -->
     <uses-feature android:name="android.hardware.camera" android:required="true" />
@@ -50,20 +68,26 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Deep link for foreground service notification tap -->
+            <!-- Deep link for foreground service notification tap and wake-word trigger -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="dashview" android:host="home" />
+                <data android:scheme="dashviewcar" android:host="home" />
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service declaration (required API 34+) -->
+        <!-- Override react-native-background-actions service to declare foregroundServiceType
+             (required Android 14 / API 34+). The library's service has no type; tools:node="merge"
+             injects the attribute.
+             - microphone: required for Vosk continuous background listening.
+             - camera: required for triggered recording that may begin while the service is
+               still running (i.e., before the main activity fully takes over).
+             Location is NOT included here — GPS runs outside this foreground service context. -->
         <service
-            android:name="com.asteroidapps.dashview.DashViewForegroundService"
-            android:foregroundServiceType="camera|microphone|location"
-            android:exported="false" />
+            android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"
+            android:foregroundServiceType="camera|microphone"
+            tools:node="merge" />
 
     </application>
 </manifest>

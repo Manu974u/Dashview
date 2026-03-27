@@ -8,6 +8,7 @@ module.exports = {
         extensions: ['.ios.js', '.android.js', '.js', '.ts', '.tsx', '.json'],
         alias: {
           '@': './src',
+          'ffmpeg-kit-react-native': './src/stubs/ffmpeg-kit-react-native',
         },
       },
     ],

@@ -1,7 +1,7 @@
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import React, {useEffect, useRef} from 'react';
+import {NavigationContainerRef, NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Text, StyleSheet} from 'react-native';
+import {Text, View, StyleSheet, DeviceEventEmitter} from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import ClipsScreen from '../screens/ClipsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -16,20 +16,33 @@ export type RootTabParamList = {
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 function TabIcon({
-  label,
+  emoji,
   focused,
 }: {
-  label: string;
+  emoji: string;
   focused: boolean;
 }): React.JSX.Element {
   return (
-    <Text style={[styles.icon, focused && styles.iconFocused]}>{label}</Text>
+    <View style={[styles.iconWrapper, focused && styles.iconWrapperFocused]}>
+      <Text style={styles.icon}>{emoji}</Text>
+    </View>
   );
 }
 
 export default function AppNavigator(): React.JSX.Element {
+  const navRef = useRef<NavigationContainerRef<RootTabParamList>>(null);
+
+  // When a voice trigger arrives from background (via MainActivity.onVoiceTrigger),
+  // switch to the Home tab so the recording UI is visible immediately.
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onVoiceTrigger', () => {
+      navRef.current?.navigate('Home');
+    });
+    return () => sub.remove();
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navRef}>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
@@ -42,27 +55,21 @@ export default function AppNavigator(): React.JSX.Element {
           name="Home"
           component={HomeScreen}
           options={{
-            tabBarIcon: ({focused}) => (
-              <TabIcon label="🏠" focused={focused} />
-            ),
+            tabBarIcon: ({focused}) => <TabIcon emoji="🏠" focused={focused} />,
           }}
         />
         <Tab.Screen
           name="Clips"
           component={ClipsScreen}
           options={{
-            tabBarIcon: ({focused}) => (
-              <TabIcon label="🎬" focused={focused} />
-            ),
+            tabBarIcon: ({focused}) => <TabIcon emoji="🎬" focused={focused} />,
           }}
         />
         <Tab.Screen
           name="Settings"
           component={SettingsScreen}
           options={{
-            tabBarIcon: ({focused}) => (
-              <TabIcon label="⚙️" focused={focused} />
-            ),
+            tabBarIcon: ({focused}) => <TabIcon emoji="⚙️" focused={focused} />,
           }}
         />
       </Tab.Navigator>
@@ -75,18 +82,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
     borderTopWidth: 1,
-    height: 60,
+    height: 64,
     paddingBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -2},
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
   },
   tabLabel: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  iconWrapper: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  iconWrapperFocused: {
+    backgroundColor: colors.accent + '14',
   },
   icon: {
     fontSize: 20,
-    opacity: 0.6,
-  },
-  iconFocused: {
-    opacity: 1,
   },
 });
