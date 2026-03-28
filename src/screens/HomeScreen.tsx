@@ -163,6 +163,9 @@ export default function HomeScreen(): React.JSX.Element {
     console.log('[HomeScreen] Camera onStarted');
     cameraStarted.current = true;
     isCameraReadyForTest.current = true;
+    setTimeout(() => {
+      cameraRef.current?.focus({ x: 0.5, y: 0.25 }).catch(() => {});
+    }, 1000);
     // Fire any pending trigger that arrived before camera was ready.
     if (pendingTrigger.current && useAppStore.getState().mode === 'recording' && cameraRef.current) {
       const trigger = pendingTrigger.current;
@@ -693,6 +696,7 @@ export default function HomeScreen(): React.JSX.Element {
           video
           audio={false}
           videoStabilizationMode="off"
+          zoom={0}
           onStarted={handleCameraStarted}
           onStopped={handleCameraStopped}
           onInitialized={() => console.log('[HomeScreen] Camera onInitialized')}

@@ -601,7 +601,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
             map.putArray("confidences", confArr)
         }
         emit("DashSpeech:results", map)
-        scheduleRestart(0)
+        scheduleRestart(100)
     }
 
     override fun onError(error: Int) {

@@ -33,8 +33,6 @@ class SpeedMonitorServiceClass {
       return;
     }
 
-    AccelerometerService.start();
-
     this.pollInterval = setInterval(() => {
       this.tick();
     }, 1_000);
@@ -45,7 +43,6 @@ class SpeedMonitorServiceClass {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
     }
-    AccelerometerService.stop();
     this.samples = [];
     this.lastTriggerTime = 0;
   }
@@ -74,9 +71,8 @@ class SpeedMonitorServiceClass {
     }
 
     const speedDropDetected = detectSpeedDrop(this.samples, sensitivity);
-    const gforceConfirmed = AccelerometerService.hasImpactGForce();
 
-    if (speedDropDetected && gforceConfirmed) {
+    if (speedDropDetected) {
       this.lastTriggerTime = now;
       this.onImpact?.();
     }
