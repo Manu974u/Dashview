@@ -18,12 +18,38 @@ interface Props {
   onPress: () => void;
   onDelete: () => void;
   onShare: () => void;
+  // Selection mode
+  selectionMode?: boolean;
+  selected?: boolean;
+  onLongPress?: () => void;
 }
 
-export default function ClipCard({clip, onPress, onDelete, onShare}: Props): React.JSX.Element {
+export default function ClipCard({
+  clip,
+  onPress,
+  onDelete,
+  onShare,
+  selectionMode = false,
+  selected = false,
+  onLongPress,
+}: Props): React.JSX.Element {
   const isVoice = clip.trigger === 'voice';
 
+  function handlePress() {
+    if (selectionMode) {
+      onPress(); // in selection mode, tap = toggle
+    } else {
+      onPress(); // normal mode, tap = play
+    }
+  }
+
   function handleLongPress() {
+    if (selectionMode) return; // already in selection, ignore
+    if (onLongPress) {
+      onLongPress(); // enter selection mode
+      return;
+    }
+    // Fallback: show action sheet as before
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {options: ['Cancel', 'Share', 'Delete'], destructiveButtonIndex: 2, cancelButtonIndex: 0},
@@ -50,8 +76,8 @@ export default function ClipCard({clip, onPress, onDelete, onShare}: Props): Rea
 
   return (
     <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
+      style={[styles.card, selected && styles.cardSelected]}
+      onPress={handlePress}
       onLongPress={handleLongPress}
       activeOpacity={0.85}
       accessibilityLabel={`Clip from ${getDisplayDateTime(clip.timestamp)}, trigger: ${clip.trigger}`}>
@@ -69,6 +95,13 @@ export default function ClipCard({clip, onPress, onDelete, onShare}: Props): Rea
         <View style={styles.durationPill}>
           <Text style={styles.durationText}>{formatDuration(clip.duration)}</Text>
         </View>
+
+        {/* Checkbox overlay (shown in selection mode) */}
+        {selectionMode && (
+          <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+            {selected && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+        )}
       </View>
 
       {/* Info */}
@@ -102,6 +135,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  cardSelected: {
+    borderColor: colors.accent,
+    borderWidth: 2,
+  },
   thumbnailContainer: {
     height: 110,
     backgroundColor: colors.surfaceElevated,
@@ -126,6 +163,29 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '600',
+  },
+  checkbox: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 14,
   },
   info: {
     padding: 10,

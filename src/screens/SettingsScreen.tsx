@@ -37,6 +37,7 @@ export default function SettingsScreen(): React.JSX.Element {
   const mode = useAppStore(s => s.mode);
   const language = useAppStore(s => s.language);
   const setLanguage = useAppStore(s => s.setLanguage);
+  const languageIsAutoDetected = useAppStore(s => s.languageIsAutoDetected);
 
   async function handleClearAllClips() {
     Alert.alert(t('settings.clearAllTitle'), t('settings.clearAllBody'), [
@@ -121,6 +122,9 @@ export default function SettingsScreen(): React.JSX.Element {
         <SectionHeader title={t('settings.sectionLanguage')} />
         <View style={styles.card}>
           <Text style={styles.rowLabel}>{t('settings.languageLabel')}</Text>
+          {languageIsAutoDetected && (
+            <Text style={styles.rowNote}>{t('settings.languageAutoDetected')}</Text>
+          )}
           <View style={[styles.segmentedControl, {marginTop: spacing.sm}]}>
             {(['en', 'fr'] as const).map(lang => (
               <TouchableOpacity

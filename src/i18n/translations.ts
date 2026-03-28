@@ -23,6 +23,9 @@ export const translations = {
       overlayWarning: '⚠️ Overlay permission missing — tap to fix',
       overlayWarningDesc: 'Recording screen may not appear over other apps',
 
+      batteryOptWarning: '🔋 Battery optimization is ON — tap to fix',
+      batteryOptWarningDesc: 'Voice detection may be killed in the background. Tap → disable optimization for DashViewCar',
+
       honorWarning: '⚠️ Honor: background blocked by MagicOS',
       honorDesc: 'Settings → DashViewCar → Battery → No restrictions',
       honorAction: 'Open settings →',
@@ -120,8 +123,11 @@ export const translations = {
       overlayTitle: 'One more thing',
       overlayBody:
         'Allow DashViewCar to appear over other apps — so the recording screen pops up instantly when you say "Dash", even if Waze or another app is open.',
-      overlayGrantBtn: 'Grant permission →',
+      overlayGrantBtn: 'Grant permission automatically',
       overlayGranting: 'Opening settings...',
+      overlayInstruction: 'Enable the toggle next to DashViewCar on the next screen, then come back here',
+      overlayRetryBtn: 'Try again →',
+      overlayNotGrantedYet: '⚠️ Permission not enabled yet — go back to settings and enable the toggle next to DashViewCar',
       overlayGranted: "✅ Permission granted — you're all set!",
       overlayNotYetTitle: 'Not enabled yet',
       overlayNotYetBody:
@@ -202,6 +208,7 @@ export const translations = {
 
       sectionLanguage: 'Language',
       languageLabel: 'App Language',
+      languageAutoDetected: 'Detected from your device settings',
       langEn: 'English',
       langFr: 'Français',
     },
@@ -228,6 +235,9 @@ export const translations = {
 
       overlayWarning: '⚠️ Permission superposition manquante — appuyez pour corriger',
       overlayWarningDesc: "L'écran de capture peut ne pas apparaître par-dessus les autres applis",
+
+      batteryOptWarning: '🔋 Optimisation batterie active — appuyez pour corriger',
+      batteryOptWarningDesc: "La détection vocale peut être tuée en arrière-plan. Appuyez → désactivez l'optimisation pour DashViewCar",
 
       honorWarning: '⚠️ Honor : arrière-plan bloqué par MagicOS',
       honorDesc: 'Paramètres → DashViewCar → Batterie → Aucune restriction',
@@ -336,8 +346,11 @@ export const translations = {
       overlayTitle: 'Encore une chose',
       overlayBody:
         'Autorisez DashViewCar à s\'afficher par-dessus les autres applis — pour que l\'écran de capture s\'ouvre instantanément quand vous dites "Dash", même si Waze ou une autre appli est ouverte.',
-      overlayGrantBtn: 'Accorder la permission →',
+      overlayGrantBtn: 'Accorder la permission automatiquement',
       overlayGranting: 'Ouverture des paramètres...',
+      overlayInstruction: "Activez le bouton DashViewCar sur l'écran suivant, puis revenez ici",
+      overlayRetryBtn: 'Réessayer →',
+      overlayNotGrantedYet: "⚠️ Permission non activée — retournez aux paramètres et activez le bouton DashViewCar",
       overlayGranted: '✅ Permission accordée — tout est prêt !',
       overlayNotYetTitle: 'Pas encore activé',
       overlayNotYetBody:
@@ -423,7 +436,8 @@ export const translations = {
       devNormalBrakingTitle: 'Non déclenché',
 
       sectionLanguage: 'Langue',
-      languageLabel: 'Langue de l\'appli',
+      languageLabel: "Langue de l'appli",
+      languageAutoDetected: 'Détectée depuis les paramètres de votre appareil',
       langEn: 'English',
       langFr: 'Français',
     },

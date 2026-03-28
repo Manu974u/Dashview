@@ -62,6 +62,8 @@ export default function OnboardingScreen(): React.JSX.Element {
   const [permPhase, setPermPhase] = useState<'initial' | 'overlay'>('initial');
   const [overlayGranted, setOverlayGranted] = useState<boolean | null>(null);
   const [requestingOverlay, setRequestingOverlay] = useState(false);
+  // true after the user has tapped the grant button at least once
+  const [hasOpenedSettings, setHasOpenedSettings] = useState(false);
   const listRef = useRef<FlatList>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const setOnboardingComplete = useAppStore(s => s.setOnboardingComplete);
@@ -137,6 +139,8 @@ export default function OnboardingScreen(): React.JSX.Element {
     setRequestingOverlay(true);
     try {
       await NativeModules.DashSpeech?.requestOverlayPermission?.();
+      // Mark that settings were opened — shows instruction + retry state on return
+      setHasOpenedSettings(true);
       // AppState listener will re-check when user returns from settings
     } catch (e: any) {
       console.warn('[Onboarding] overlay settings error:', e?.message ?? e);
@@ -170,10 +174,31 @@ export default function OnboardingScreen(): React.JSX.Element {
           <Text style={styles.permBody}>{t('onboarding.overlayBody')}</Text>
 
           {overlayGranted === true ? (
+            // ── Granted ──────────────────────────────────────────────────────
             <View style={styles.grantedBadge}>
               <Text style={styles.grantedBadgeText}>{t('onboarding.overlayGranted')}</Text>
             </View>
+          ) : hasOpenedSettings && overlayGranted === false ? (
+            // ── Opened settings but not yet granted ───────────────────────────
+            <>
+              <View style={styles.overlayNotGrantedWarning}>
+                <Text style={styles.overlayNotGrantedText}>
+                  {t('onboarding.overlayNotGrantedYet')}
+                </Text>
+              </View>
+              <Text style={styles.overlayInstruction}>{t('onboarding.overlayInstruction')}</Text>
+              <TouchableOpacity
+                style={[styles.nextBtn, requestingOverlay && styles.btnDisabled]}
+                onPress={handleGrantOverlay}
+                disabled={requestingOverlay}
+                activeOpacity={0.8}>
+                <Text style={styles.nextBtnText}>
+                  {requestingOverlay ? t('onboarding.overlayGranting') : t('onboarding.overlayRetryBtn')}
+                </Text>
+              </TouchableOpacity>
+            </>
           ) : (
+            // ── Initial state ────────────────────────────────────────────────
             <TouchableOpacity
               style={[styles.nextBtn, requestingOverlay && styles.btnDisabled]}
               onPress={handleGrantOverlay}
@@ -452,6 +477,29 @@ const styles = StyleSheet.create({
   },
 
   // ── Overlay phase ──────────────────────────────────────────────────────────
+  overlayNotGrantedWarning: {
+    backgroundColor: '#FBE9E715',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FF7043',
+    padding: 14,
+    marginBottom: 12,
+  },
+  overlayNotGrantedText: {
+    color: '#BF360C',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  overlayInstruction: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
   grantedBadge: {
     backgroundColor: '#1B5E2015',
     borderRadius: borderRadius.md,

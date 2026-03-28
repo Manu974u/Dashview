@@ -195,6 +195,111 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
     }
 
     /**
+     * Returns true if DashViewCar is already exempt from battery optimizations.
+     * Called from JS to decide whether to show the battery optimization banner.
+     */
+    @ReactMethod
+    fun isBatteryOptimizationExempt(promise: Promise) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+                promise.resolve(pm.isIgnoringBatteryOptimizations(reactContext.packageName))
+            } else {
+                promise.resolve(true) // no optimization enforcement below M
+            }
+        } catch (e: Exception) {
+            promise.resolve(false)
+        }
+    }
+
+    /**
+     * Opens the manufacturer-specific battery optimization settings page.
+     * Tries OEM-specific deep-link first (Samsung / Huawei+Honor / Xiaomi / OnePlus+Oppo),
+     * then falls back to the standard ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS dialog,
+     * then to generic App Info settings.
+     */
+    @ReactMethod
+    fun openBatterySettings(promise: Promise) {
+        try {
+            val manufacturer = Build.MANUFACTURER.lowercase()
+            val pkg = reactContext.packageName
+            val pm2 = reactContext.packageManager
+            val candidates = mutableListOf<Intent>()
+
+            when {
+                manufacturer.contains("samsung") -> {
+                    candidates += Intent().apply {
+                        component = android.content.ComponentName(
+                            "com.samsung.android.lool",
+                            "com.samsung.android.sm.ui.battery.BatteryActivity"
+                        )
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                }
+                manufacturer.contains("huawei") || manufacturer.contains("honor") -> {
+                    candidates += Intent().apply {
+                        component = android.content.ComponentName(
+                            "com.huawei.systemmanager",
+                            "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+                        )
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    candidates += Intent().apply {
+                        component = android.content.ComponentName(
+                            "com.huawei.systemmanager",
+                            "com.huawei.systemmanager.optimize.process.ProtectActivity"
+                        )
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                }
+                manufacturer.contains("xiaomi") || manufacturer.contains("redmi") -> {
+                    candidates += Intent().apply {
+                        component = android.content.ComponentName(
+                            "com.miui.powerkeeper",
+                            "com.miui.powerkeeper.ui.HiddenAppsConfigActivity"
+                        )
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                }
+                manufacturer.contains("oneplus") || manufacturer.contains("oppo") -> {
+                    candidates += Intent().apply {
+                        component = android.content.ComponentName(
+                            "com.coloros.oppoguardelf",
+                            "com.coloros.powermanager.fuelgaue.PowerUsageModelActivity"
+                        )
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                }
+            }
+
+            // Standard system dialog (works on stock Android and most OEMs)
+            candidates += Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$pkg")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            // Final fallback: generic App Info page
+            candidates += Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$pkg")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
+            for (intent in candidates) {
+                try {
+                    if (pm2.queryIntentActivities(intent, 0).isNotEmpty()) {
+                        reactContext.startActivity(intent)
+                        promise.resolve(null)
+                        return
+                    }
+                } catch (_: Exception) {}
+            }
+            promise.resolve(null)
+        } catch (e: Exception) {
+            Log.w(TAG, "openBatterySettings error: ${e.message}")
+            promise.reject("BATTERY_SETTINGS_ERROR", e.message)
+        }
+    }
+
+    /**
      * Asks the OS to exempt DashViewCar from battery optimizations.
      * Shows the system dialog if not already exempt; resolves true if dialog shown.
      */
@@ -378,11 +483,24 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (!Settings.canDrawOverlays(reactContext)) {
                     Log.d(TRIGGER_TAG, "requestOverlayPermission: opening settings")
-                    val intent = Intent(
+                    // Try the direct app-specific overlay toggle page first.
+                    val directIntent = Intent(
                         Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                         Uri.parse("package:${reactContext.packageName}")
                     ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
-                    reactContext.startActivity(intent)
+                    val resolved = reactContext.packageManager.resolveActivity(directIntent, 0)
+                    if (resolved != null) {
+                        Log.d(TRIGGER_TAG, "requestOverlayPermission: direct intent resolved — launching")
+                        reactContext.startActivity(directIntent)
+                    } else {
+                        // Fallback: App Info page where user can navigate to overlay settings.
+                        Log.d(TRIGGER_TAG, "requestOverlayPermission: direct intent unresolved — fallback to App Info")
+                        val fallbackIntent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:${reactContext.packageName}")
+                        ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                        reactContext.startActivity(fallbackIntent)
+                    }
                     promise.resolve(true)
                 } else {
                     Log.d(TRIGGER_TAG, "requestOverlayPermission: already granted")
@@ -392,8 +510,18 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
                 promise.resolve(false)
             }
         } catch (e: Exception) {
-            Log.w(TRIGGER_TAG, "requestOverlayPermission error: ${e.message}")
-            promise.reject("OVERLAY_ERROR", e.message)
+            // Last-resort fallback: open the general app management list.
+            Log.w(TRIGGER_TAG, "requestOverlayPermission error: ${e.message} — trying last-resort fallback")
+            try {
+                val fallback = Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                reactContext.startActivity(fallback)
+                promise.resolve(true)
+            } catch (e2: Exception) {
+                Log.e(TRIGGER_TAG, "requestOverlayPermission last-resort failed: ${e2.message}")
+                promise.reject("OVERLAY_ERROR", e2.message)
+            }
         }
     }
 
@@ -442,7 +570,19 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
             try {
                 val modelDir = File(reactContext.filesDir, "model-en-us")
                 if (!modelDir.exists()) {
-                    Log.d(TAG, "Copying Vosk model from assets...")
+                    // Require at least 200 MB free before extracting the model.
+                    val stat = android.os.StatFs(reactContext.filesDir.absolutePath)
+                    val availMb = (stat.availableBlocksLong * stat.blockSizeLong) / (1024 * 1024)
+                    if (availMb < 200) {
+                        Log.w(TAG, "Insufficient storage for Vosk model ($availMb MB free)")
+                        recognitionHandler.post {
+                            val map = Arguments.createMap()
+                            map.putString("message", "Not enough storage to load voice model (need 200 MB free, have $availMb MB)")
+                            emit("DashSpeech:criticalError", map)
+                        }
+                        return@Thread
+                    }
+                    Log.d(TAG, "Copying Vosk model from assets ($availMb MB free)...")
                     copyAssetDir("model-en-us", modelDir)
                     Log.d(TAG, "Model copy complete")
                 }

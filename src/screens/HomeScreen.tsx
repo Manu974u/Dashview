@@ -61,6 +61,11 @@ export default function HomeScreen(): React.JSX.Element {
    */
   const pendingTrigger = useRef<'voice' | 'impact' | null>(null);
   /**
+   * pendingTest — set when startTestRecording() fires before the camera session
+   * is live. Picked up by handleCameraStarted() once onStarted fires.
+   */
+  const pendingTest = useRef(false);
+  /**
    * lastTriggerTimeMs — epoch ms of last accepted voice trigger.
    * Prevents duplicate triggers within TRIGGER_COOLDOWN_MS.
    */
@@ -82,6 +87,7 @@ export default function HomeScreen(): React.JSX.Element {
   const [testPhase, setTestPhase] = useState<TestPhase>(null);
   const [testSecondsLeft, setTestSecondsLeft] = useState(TEST_COUNTDOWN_SECONDS);
   const [showOverlayWarning, setShowOverlayWarning] = useState(false);
+  const [showBatteryBanner, setShowBatteryBanner] = useState(false);
   const isCameraReadyForTest = useRef(false);
   const [isHonorDevice, setIsHonorDevice] = useState(false);
 
@@ -166,11 +172,16 @@ export default function HomeScreen(): React.JSX.Element {
     setTimeout(() => {
       cameraRef.current?.focus({ x: 0.5, y: 0.25 }).catch(() => {});
     }, 1000);
-    // Fire any pending trigger that arrived before camera was ready.
+    // Fire any pending voice/impact trigger that arrived before camera was ready.
     if (pendingTrigger.current && useAppStore.getState().mode === 'recording' && cameraRef.current) {
       const trigger = pendingTrigger.current;
       pendingTrigger.current = null;
       startRecordingIfNotStarted(trigger);
+    }
+    // Fire any pending test recording that was queued before the camera session started.
+    if (pendingTest.current) {
+      pendingTest.current = false;
+      startTestRecording();
     }
   }
 
@@ -208,6 +219,9 @@ export default function HomeScreen(): React.JSX.Element {
 
   function doStartRecording(trigger: 'voice' | 'impact') {
     console.log('[HomeScreen] doStartRecording trigger=' + trigger);
+    // doStartRecording is always called after cameraStarted.current === true
+    // (either directly from handleCameraStarted, or from the trigger effect when
+    // the camera session is already live). No artificial delay needed here.
     RecordingService.setCameraRef(cameraRef.current);
     RecordingService.triggerRecording(trigger).catch((e: any) => {
       console.error('[HomeScreen] triggerRecording error:', e?.message ?? e);
@@ -405,6 +419,28 @@ export default function HomeScreen(): React.JSX.Element {
     return () => sub.remove();
   }, []);
 
+  // ── Battery optimization banner ───────────────────────────────────────────
+  // Shows a banner for ALL devices when battery optimization is NOT exempted.
+  // Background voice detection is killed by the OS without this exemption.
+  // Re-checks on AppState active so banner hides automatically once the user
+  // grants the exemption and returns to the app.
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const exempt: boolean =
+          await NativeModules.DashSpeech?.isBatteryOptimizationExempt?.();
+        setShowBatteryBanner(exempt === false);
+      } catch {
+        // non-blocking
+      }
+    };
+    check();
+    const sub = AppState.addEventListener('change', next => {
+      if (next === 'active') check();
+    });
+    return () => sub.remove();
+  }, []);
+
   // ── Keep cameraRef in sync ────────────────────────────────────────────────
   useEffect(() => {
     RecordingService.setCameraRef(cameraRef.current);
@@ -565,6 +601,7 @@ export default function HomeScreen(): React.JSX.Element {
 
   function handleCancelTest() {
     clearTestTimers();
+    pendingTest.current = false;
     if (testPhase === 'recording') {
       cameraRef.current?.stopRecording().catch(() => {});
     }
@@ -591,11 +628,14 @@ export default function HomeScreen(): React.JSX.Element {
   }
 
   function startTestRecording() {
+    // Gate: camera session must be live before calling startRecording().
+    // If not ready yet, set pendingTest so handleCameraStarted() picks it up.
     if (!cameraRef.current || !isCameraReadyForTest.current) {
-      console.log('[HomeScreen] startTestRecording: camera not ready, retrying in 300ms...');
-      setTimeout(startTestRecording, 300);
+      console.log('[HomeScreen] startTestRecording: camera not ready — queuing pendingTest');
+      pendingTest.current = true;
       return;
     }
+    pendingTest.current = false;
     setTestPhase('recording');
     let secs = TEST_RECORDING_SECONDS;
     setTestSecondsLeft(secs);
@@ -614,6 +654,7 @@ export default function HomeScreen(): React.JSX.Element {
     const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
     const filename = `DashViewCar_TEST_${dateStr}_${timeStr}.mp4`;
 
+    // Camera is confirmed ready — call startRecording() immediately (no timeout).
     try {
       cameraRef.current.startRecording({
         fileType: 'mp4',
@@ -626,7 +667,17 @@ export default function HomeScreen(): React.JSX.Element {
         onRecordingError: err => {
           clearTestTimers();
           setTestPhase(null);
-          Alert.alert(t('home.testFailedTitle'), err?.message ?? 'Recording error occurred.');
+          const msg = err?.message ?? 'Recording error occurred.';
+          const isNoFrames =
+            msg.toLowerCase().includes('no frames') ||
+            msg.toLowerCase().includes('frame') ||
+            msg.toLowerCase().includes('encoder');
+          Alert.alert(
+            t('home.testFailedTitle'),
+            isNoFrames
+              ? 'Camera is still initializing. Please wait a moment and try again.'
+              : msg,
+          );
         },
       });
     } catch (e: any) {
@@ -807,6 +858,20 @@ export default function HomeScreen(): React.JSX.Element {
               accessibilityLabel="Fix overlay permission">
               <Text style={styles.overlayWarningText}>{t('home.overlayWarning')}</Text>
               <Text style={styles.overlayWarningSubText}>{t('home.overlayWarningDesc')}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Battery optimization banner — shown for ALL devices when not exempt */}
+          {showBatteryBanner && (
+            <TouchableOpacity
+              style={styles.batteryWarningBanner}
+              onPress={() =>
+                NativeModules.DashSpeech?.openBatterySettings?.()?.catch?.(() => {})
+              }
+              activeOpacity={0.8}
+              accessibilityLabel="Disable battery optimization">
+              <Text style={styles.batteryWarningText}>{t('home.batteryOptWarning')}</Text>
+              <Text style={styles.batteryWarningSubText}>{t('home.batteryOptWarningDesc')}</Text>
             </TouchableOpacity>
           )}
 
@@ -1107,6 +1172,28 @@ const styles = StyleSheet.create({
   },
   overlayWarningSubText: {
     color: '#795548',
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  // ── Battery optimization banner ───────────────────────────────────────────
+  batteryWarningBanner: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: '#E8F5E9',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#43A047',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  batteryWarningText: {
+    color: '#1B5E20',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  batteryWarningSubText: {
+    color: '#2E7D32',
     fontSize: 12,
     marginTop: 2,
   },

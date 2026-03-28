@@ -1,6 +1,15 @@
 import {create} from 'zustand';
+import {NativeModules, Platform} from 'react-native';
 import {SensitivityLevel} from '../utils/speedCalc';
 import {Language} from '../i18n/translations';
+
+// Detect device locale at startup — used as the default language.
+// NativeModules.I18nManager.localeIdentifier returns e.g. "fr_FR", "en_US".
+const _deviceLocale: string =
+  Platform.OS === 'android'
+    ? (NativeModules.I18nManager?.localeIdentifier as string | undefined) ?? 'en'
+    : 'en';
+const _defaultLanguage: Language = _deviceLocale.startsWith('fr') ? 'fr' : 'en';
 
 export type VideoQuality = '720p' | '1080p';
 export type AutoDeleteOption = 'never' | '7days' | '30days';
@@ -48,6 +57,8 @@ interface AppState {
 
   // Language
   language: Language;
+  // true = language was set automatically from device locale; false = user manually chose it
+  languageIsAutoDetected: boolean;
 
   // Dev mode
   devMode: boolean;
@@ -73,6 +84,7 @@ interface AppState {
   setOnboardingComplete: (v: boolean) => void;
   setVoiceWarningShown: (v: boolean) => void;
   setLanguage: (l: Language) => void;
+  setLanguageAutoDetected: (v: boolean) => void;
   tapVersionLabel: () => void;
   clearAllClips: () => void;
 }
@@ -94,7 +106,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   autoDelete: 'never',
   onboardingComplete: false,
   voiceWarningShown: false,
-  language: 'en',
+  language: _defaultLanguage,
+  languageIsAutoDetected: true,
   devMode: false,
   devModeVersionTaps: 0,
 
@@ -118,7 +131,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setAutoDelete: v => set({autoDelete: v}),
   setOnboardingComplete: v => set({onboardingComplete: v}),
   setVoiceWarningShown: v => set({voiceWarningShown: v}),
-  setLanguage: l => set({language: l}),
+  setLanguage: l => set({language: l, languageIsAutoDetected: false}),
+  setLanguageAutoDetected: v => set({languageIsAutoDetected: v}),
   tapVersionLabel: () => {
     const taps = get().devModeVersionTaps + 1;
     if (taps >= 5) {
