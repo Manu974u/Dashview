@@ -1,7 +1,7 @@
 /**
  * SpeedMonitorService.ts
  * Monitors GPS speed and detects sudden speed drops (potential collisions).
- * Uses AccelerometerService as backup confirmation.
+ * Triggers on speed drop alone — no accelerometer gating needed.
  */
 import {useAppStore} from '../store/useAppStore';
 import {
@@ -10,7 +10,6 @@ import {
   SpeedSample,
   SensitivityLevel,
 } from '../utils/speedCalc';
-import {AccelerometerService} from './AccelerometerService';
 import {RecordingService} from './RecordingService';
 
 const SAMPLE_WINDOW_SIZE = 10; // keep last 10 seconds of samples
@@ -74,6 +73,11 @@ class SpeedMonitorServiceClass {
 
     if (speedDropDetected) {
       this.lastTriggerTime = now;
+      // Snapshot impact speeds into the store so RecordingService can capture
+      // them at trigger time for clip metadata (before GPS updates overwrite them).
+      const fromSpeed = this.samples[0]?.speedKmh ?? speedKmh;
+      useAppStore.getState().setCurrentSpeed(speedKmh);
+      useAppStore.getState().setLastSpeedDrop({from: fromSpeed, to: speedKmh});
       this.onImpact?.();
     }
   }

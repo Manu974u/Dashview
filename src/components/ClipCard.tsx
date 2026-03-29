@@ -114,7 +114,9 @@ export default function ClipCard({
         <Text style={styles.datetime} numberOfLines={1}>
           {getDisplayDateTime(clip.timestamp)}
         </Text>
-        <Text style={styles.speed}>{Math.round(clip.speedKmh)} km/h</Text>
+        {clip.speedKmh > 0 && (
+          <Text style={styles.speed}>{Math.round(clip.speedKmh)} km/h</Text>
+        )}
       </View>
     </TouchableOpacity>
   );

@@ -121,16 +121,15 @@ class VoskServiceClass {
   private isDash(text: string): boolean {
     const n = text.toLowerCase().trim();
     return (
-      n.includes('dash')   ||
-      n.includes('das')    ||
-      n.includes('dasha')  ||
-      n.includes('tash')   ||
-      n.includes('stach')  ||
-      n.includes('stache') ||
-      n.includes('stash')  ||
-      n.includes('naf')    ||
-      n.includes('dache')  ||
-      n.includes('tache')
+      n.includes('go dash')  ||
+      n.includes('go das')   ||
+      n.includes('go dach')  ||
+      n.includes('godash')   ||
+      n.includes('go dasch') ||
+      n.includes('go stash') ||
+      n.includes('go cache') ||
+      n.includes('gou dash') ||
+      n.includes('go tache')
     );
   }
 

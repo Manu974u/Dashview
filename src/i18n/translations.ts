@@ -18,7 +18,7 @@ export const translations = {
     // ── HomeScreen ─────────────────────────────────────────────────────────
     home: {
       title: 'Welcome to DashViewCar',
-      subtitle: 'Shout Dash, Drive free, Forget nothing!',
+      subtitle: 'Shout Go Dash, Drive free, Forget nothing!',
 
       overlayWarning: '⚠️ Overlay permission missing — tap to fix',
       overlayWarningDesc: 'Recording screen may not appear over other apps',
@@ -31,9 +31,9 @@ export const translations = {
       honorAction: 'Open settings →',
 
       voiceTitle: 'Voice Detection',
-      voiceListening: 'Listening for "Dash"...',
+      voiceListening: 'Listening for "Go Dash"...',
       voiceSaving: 'Saving clip...',
-      voiceIdle: 'Say "Dash" to record',
+      voiceIdle: 'Say "Go Dash" to record',
 
       speedTitle: 'Speed Protection',
       speedMonitoring: 'Monitoring — {speed} km/h',
@@ -60,7 +60,7 @@ export const translations = {
 
       micModalTitle: '⚠️ Microphone Notice',
       micModalBody:
-        'DashViewCar uses your microphone continuously in the background to detect the wake word "Dash".\n\nThis may interfere with other voice assistants. Your audio is processed entirely on-device and never recorded or transmitted.',
+        'DashViewCar uses your microphone continuously in the background to detect the wake word "Go Dash".\n\nThis may interfere with other voice assistants. Your audio is processed entirely on-device and never recorded or transmitted.',
       micModalConfirm: 'I understand, activate',
 
       voiceUnavailableTitle: 'Voice Recognition Unavailable',
@@ -70,7 +70,7 @@ export const translations = {
       couldNotStartBody: 'Background service failed to start.\n\n{error}',
 
       micRequiredTitle: 'Microphone Required',
-      micRequiredBody: "Grant microphone access in Settings so DashViewCar can listen for 'Dash'.",
+      micRequiredBody: "Grant microphone access in Settings so DashViewCar can listen for 'Go Dash'.",
 
       testFailedTitle: 'Test Failed',
       saveFailedTitle: 'Save Failed',
@@ -84,7 +84,7 @@ export const translations = {
     clips: {
       title: 'Your Clips',
       emptyTitle: 'No clips yet',
-      emptyBody: 'Say "Dash" while Voice Detection is active, or run a test to get started.',
+      emptyBody: 'Say "Go Dash" while Voice Detection is active, or run a test to get started.',
       shareMessage: 'DashViewCar clip — {timestamp}',
     },
 
@@ -92,8 +92,8 @@ export const translations = {
     onboarding: {
       slide1Title: 'Your phone.\nYour dashcam.',
       slide1Body: 'DashViewCar protects you on the road — silently, in the background.',
-      slide2Title: 'Just say "Dash"',
-      slide2Body: '"Dash" is all it takes. DashViewCar saves the moment automatically.',
+      slide2Title: 'Just say "Go Dash"',
+      slide2Body: '"Go Dash" is all it takes. DashViewCar saves the moment automatically.',
       slide3Title: 'Smart protection',
       slide3Body: 'Enable speed drop detection for automatic emergency recording.',
 
@@ -102,7 +102,7 @@ export const translations = {
       permCamera: 'Camera',
       permCameraDesc: 'Records 60 seconds when triggered',
       permMic: 'Microphone',
-      permMicDesc: "Listens for the 'Dash' wake word",
+      permMicDesc: "Listens for the 'Go Dash' wake word",
       permLocation: 'Location (Always)',
       permLocationDesc: 'GPS coordinates and speed metadata',
       permStorage: 'Storage',
@@ -115,14 +115,14 @@ export const translations = {
       permCameraRequired: 'Camera required',
       permCameraRequiredDesc: 'Camera access is required to record when triggered.',
       permMicRequired: 'Microphone required',
-      permMicRequiredDesc: "Microphone access is required to listen for the 'Dash' wake word.",
+      permMicRequiredDesc: "Microphone access is required to listen for the 'Go Dash' wake word.",
       permLocationRequired: 'Location required',
       permLocationRequiredDesc:
         'Location access is required to record GPS coordinates and speed metadata.',
 
       overlayTitle: 'One more thing',
       overlayBody:
-        'Allow DashViewCar to appear over other apps — so the recording screen pops up instantly when you say "Dash", even if Waze or another app is open.',
+        'Allow DashViewCar to appear over other apps — so the recording screen pops up instantly when you say "Go Dash", even if Waze or another app is open.',
       overlayGrantBtn: 'Grant permission automatically',
       overlayGranting: 'Opening settings...',
       overlayInstruction: 'Enable the toggle next to DashViewCar on the next screen, then come back here',
@@ -141,7 +141,7 @@ export const translations = {
 
       sectionVoice: 'Voice',
       wakeWord: 'Wake Word',
-      wakeWordValue: '"Dash"',
+      wakeWordValue: '"Go Dash"',
       wakeWordNote: 'Premium: custom words coming soon',
       recognition: 'Recognition',
       recognitionValue: 'Offline · No internet needed',
@@ -161,8 +161,17 @@ export const translations = {
       sensHighDesc: '20 km/h drop',
 
       sectionVideo: 'Video',
-      clipDuration: 'Clip Duration',
-      clipDurationValue: '60 seconds (fixed)',
+      clipDurationTitle: 'Clip Duration',
+      clipDurationDesc: 'Recording length per trigger',
+      clipDuration60: '60 sec',
+      clipDuration120: '2 min',
+      clipDuration240: '4 min',
+      clipDuration480: '8 min',
+      clipDurationWarning: '⚠️ Longer clips use more battery and storage',
+      clipDurationBatteryNote60: 'Recommended — minimal battery impact',
+      clipDurationBatteryNote120: 'Moderate battery usage',
+      clipDurationBatteryNote240: 'High battery usage',
+      clipDurationBatteryNote480: 'Very high battery usage — charge recommended',
       quality: 'Quality',
       quality720: '720p',
       quality720Desc: 'Smaller files',
@@ -194,7 +203,7 @@ export const translations = {
 
       sectionAbout: 'About',
       appVersion: 'App Version',
-      appVersionValue: 'DashViewCar v1.0.0',
+      appVersionValue: 'DashViewCar v1.0.2',
 
       sectionDev: 'Developer',
       devReloadClips: '🔄  Reload clips from disk',
@@ -231,7 +240,7 @@ export const translations = {
     // ── HomeScreen ─────────────────────────────────────────────────────────
     home: {
       title: 'Bienvenue sur DashViewCar',
-      subtitle: 'Dis Dash, conduis libre, oublie rien !',
+      subtitle: 'Dis Go Dash, conduis libre, oublie rien !',
 
       overlayWarning: '⚠️ Permission superposition manquante — appuyez pour corriger',
       overlayWarningDesc: "L'écran de capture peut ne pas apparaître par-dessus les autres applis",
@@ -244,9 +253,9 @@ export const translations = {
       honorAction: 'Ouvrir les paramètres →',
 
       voiceTitle: 'Détection vocale',
-      voiceListening: 'En écoute "Dash"...',
+      voiceListening: 'En écoute "Go Dash"...',
       voiceSaving: 'Sauvegarde en cours...',
-      voiceIdle: 'Dites "Dash" pour enregistrer',
+      voiceIdle: 'Dites "Go Dash" pour enregistrer',
 
       speedTitle: 'Protection vitesse',
       speedMonitoring: 'Surveillance — {speed} km/h',
@@ -273,7 +282,7 @@ export const translations = {
 
       micModalTitle: '⚠️ Avis microphone',
       micModalBody:
-        'DashViewCar utilise votre microphone en continu en arrière-plan pour détecter le mot-clé "Dash".\n\nCela peut interférer avec d\'autres assistants vocaux. Le traitement audio s\'effectue entièrement sur l\'appareil, sans enregistrement ni transmission.',
+        'DashViewCar utilise votre microphone en continu en arrière-plan pour détecter le mot-clé "Go Dash".\n\nCela peut interférer avec d\'autres assistants vocaux. Le traitement audio s\'effectue entièrement sur l\'appareil, sans enregistrement ni transmission.',
       micModalConfirm: 'Je comprends, activer',
 
       voiceUnavailableTitle: 'Reconnaissance vocale indisponible',
@@ -284,7 +293,7 @@ export const translations = {
 
       micRequiredTitle: 'Microphone requis',
       micRequiredBody:
-        "Accordez l'accès au microphone dans les Paramètres pour que DashViewCar puisse écouter le mot \"Dash\".",
+        "Accordez l'accès au microphone dans les Paramètres pour que DashViewCar puisse écouter le mot \"Go Dash\".",
 
       testFailedTitle: 'Test échoué',
       saveFailedTitle: 'Sauvegarde échouée',
@@ -300,7 +309,7 @@ export const translations = {
       title: 'Vos clips',
       emptyTitle: 'Aucun clip pour l\'instant',
       emptyBody:
-        'Dites "Dash" avec la détection vocale active, ou lancez un test pour commencer.',
+        'Dites "Go Dash" avec la détection vocale active, ou lancez un test pour commencer.',
       shareMessage: 'Clip DashViewCar — {timestamp}',
     },
 
@@ -309,9 +318,9 @@ export const translations = {
       slide1Title: 'Votre téléphone.\nVotre dashcam.',
       slide1Body:
         "DashViewCar vous protège sur la route — silencieusement, en arrière-plan.",
-      slide2Title: 'Dites juste "Dash"',
+      slide2Title: 'Dites juste "Go Dash"',
       slide2Body:
-        '"Dash" suffit. DashViewCar sauvegarde le moment automatiquement.',
+        '"Go Dash" suffit. DashViewCar sauvegarde le moment automatiquement.',
       slide3Title: 'Protection intelligente',
       slide3Body:
         "Activez la détection de chute de vitesse pour un enregistrement d'urgence automatique.",
@@ -322,7 +331,7 @@ export const translations = {
       permCamera: 'Caméra',
       permCameraDesc: "Enregistre 60 secondes lorsque déclenché",
       permMic: 'Microphone',
-      permMicDesc: 'Écoute le mot-clé "Dash"',
+      permMicDesc: 'Écoute le mot-clé "Go Dash"',
       permLocation: 'Localisation (toujours)',
       permLocationDesc: "Coordonnées GPS et métadonnées de vitesse",
       permStorage: 'Stockage',
@@ -338,14 +347,14 @@ export const translations = {
         'L\'accès à la caméra est nécessaire pour enregistrer lors d\'un déclenchement.',
       permMicRequired: 'Microphone requis',
       permMicRequiredDesc:
-        'L\'accès au microphone est nécessaire pour écouter le mot-clé "Dash".',
+        'L\'accès au microphone est nécessaire pour écouter le mot-clé "Go Dash".',
       permLocationRequired: 'Localisation requise',
       permLocationRequiredDesc:
         "L'accès à la localisation est nécessaire pour enregistrer les coordonnées GPS et la vitesse.",
 
       overlayTitle: 'Encore une chose',
       overlayBody:
-        'Autorisez DashViewCar à s\'afficher par-dessus les autres applis — pour que l\'écran de capture s\'ouvre instantanément quand vous dites "Dash", même si Waze ou une autre appli est ouverte.',
+        'Autorisez DashViewCar à s\'afficher par-dessus les autres applis — pour que l\'écran de capture s\'ouvre instantanément quand vous dites "Go Dash", même si Waze ou une autre appli est ouverte.',
       overlayGrantBtn: 'Accorder la permission automatiquement',
       overlayGranting: 'Ouverture des paramètres...',
       overlayInstruction: "Activez le bouton DashViewCar sur l'écran suivant, puis revenez ici",
@@ -365,7 +374,7 @@ export const translations = {
 
       sectionVoice: 'Voix',
       wakeWord: 'Mot-clé',
-      wakeWordValue: '"Dash"',
+      wakeWordValue: '"Go Dash"',
       wakeWordNote: 'Premium : mots personnalisés bientôt disponibles',
       recognition: 'Reconnaissance',
       recognitionValue: 'Hors ligne · Sans internet',
@@ -385,8 +394,17 @@ export const translations = {
       sensHighDesc: 'Chute de 20 km/h',
 
       sectionVideo: 'Vidéo',
-      clipDuration: 'Durée du clip',
-      clipDurationValue: '60 secondes (fixe)',
+      clipDurationTitle: 'Durée des clips',
+      clipDurationDesc: 'Durée d\'enregistrement par déclenchement',
+      clipDuration60: '60 sec',
+      clipDuration120: '2 min',
+      clipDuration240: '4 min',
+      clipDuration480: '8 min',
+      clipDurationWarning: '⚠️ Les clips plus longs consomment plus de batterie et de stockage',
+      clipDurationBatteryNote60: 'Recommandé — impact batterie minimal',
+      clipDurationBatteryNote120: 'Consommation batterie modérée',
+      clipDurationBatteryNote240: 'Consommation batterie élevée',
+      clipDurationBatteryNote480: 'Consommation très élevée — charge recommandée',
       quality: 'Qualité',
       quality720: '720p',
       quality720Desc: 'Fichiers plus légers',
@@ -420,7 +438,7 @@ export const translations = {
 
       sectionAbout: 'À propos',
       appVersion: 'Version',
-      appVersionValue: 'DashViewCar v1.0.0',
+      appVersionValue: 'DashViewCar v1.0.2',
 
       sectionDev: 'Développeur',
       devReloadClips: '🔄  Recharger les clips depuis le disque',

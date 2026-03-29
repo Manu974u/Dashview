@@ -138,7 +138,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
      * Released by releaseWakeLock() in the finally block after clip is saved.
      */
     @ReactMethod
-    fun acquireWakeLock(promise: Promise) {
+    fun acquireWakeLock(timeoutMs: Int, promise: Promise) {
         try {
             val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock?.let { if (it.isHeld) it.release() }
@@ -146,9 +146,9 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
                 PowerManager.PARTIAL_WAKE_LOCK,
                 "DashViewCar::RecordingLock"
             ).apply {
-                acquire(65_000L) // 60s recording + 5s buffer
+                acquire(timeoutMs.toLong())
             }
-            Log.d(TAG, "WakeLock acquired")
+            Log.d(TAG, "WakeLock acquired for ${timeoutMs}ms")
             promise.resolve(null)
         } catch (e: Exception) {
             Log.w(TAG, "acquireWakeLock failed: ${e.message}")
@@ -600,7 +600,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
         try {
             destroyRecognizer()
             val recognizer = Recognizer(voskModel, 16000.0f,
-                "[\"dash\", \"das\", \"dasha\", \"tash\", \"stash\", \"cache\", \"[unk]\"]")
+                "[\"go\", \"go dash\", \"go das\", \"go dach\", \"godash\", \"gou\", \"gou dash\", \"[unk]\"]")
             speechService = SpeechService(recognizer, 16000.0f)
             speechService!!.startListening(object : VoskListener {
                 override fun onPartialResult(hypothesis: String) {

@@ -9,8 +9,6 @@ import {getCurrentGps} from './LocationService';
 import {buildClipFilename} from '../utils/datetime';
 import {saveClip, ensureClipsDir, enforceClipLimit} from './ClipStorageService';
 
-const RECORDING_DURATION_SECONDS = 60;
-
 class RecordingServiceClass {
   private cameraRef: Camera | null = null;
   private isRecording = false;
@@ -33,15 +31,22 @@ class RecordingServiceClass {
     if (!this.cameraRef) {
       throw new Error('Camera not ready — camera must be mounted before recording.');
     }
+    const RECORDING_DURATION_SECONDS = useAppStore.getState().clipDuration;
 
     this.isRecording = true;
     const store = useAppStore.getState();
     store.setMode('recording');
     store.setRecordingTrigger(trigger);
     store.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
+    // Capture speed at trigger time — for impact triggers this is the speed
+    // set by SpeedMonitorService right before onImpact fired. For voice triggers
+    // it's the current GPS speed. Captured now before 60s of driving can overwrite it.
+    const capturedSpeedKmh = useAppStore.getState().currentSpeedKmh;
+    console.log('[RecordingService] capturedSpeedKmh at trigger:', capturedSpeedKmh);
 
-    // Acquire WakeLock for recording duration (released in saveClip finally block).
-    NativeModules.DashSpeech?.acquireWakeLock?.()?.catch?.((e: any) =>
+    // Acquire WakeLock for recording duration + 5s buffer (released in saveClip finally block).
+    const wakeLockTimeout = (RECORDING_DURATION_SECONDS + 5) * 1000;
+    NativeModules.DashSpeech?.acquireWakeLock?.(wakeLockTimeout)?.catch?.((e: any) =>
       console.warn('[RecordingService] acquireWakeLock failed:', e?.message ?? e),
     );
 
@@ -63,7 +68,7 @@ class RecordingServiceClass {
         videoBitRate: 4_000_000, // 4 Mbps — good quality, reasonable file size
         onRecordingFinished: video => {
           console.log('[RecordingService] onRecordingFinished — path:', video.path);
-          this.saveClip(video.path, trigger).catch(e =>
+          this.saveClip(video.path, trigger, capturedSpeedKmh, RECORDING_DURATION_SECONDS).catch(e =>
             console.warn('[RecordingService] saveClip error:', e?.message ?? e),
           );
         },
@@ -120,6 +125,8 @@ class RecordingServiceClass {
   private async saveClip(
     tempPath: string,
     trigger: 'voice' | 'impact',
+    capturedSpeedKmh: number,
+    recordingDuration: number,
   ): Promise<void> {
     this.isRecording = false;
     this.clearTimers();
@@ -129,6 +136,7 @@ class RecordingServiceClass {
 
     const filename = buildClipFilename(trigger);
     const timestamp = new Date().toISOString();
+    console.log('[RecordingService] saving clip with speedKmh:', capturedSpeedKmh);
 
     const gps = await getCurrentGps().catch(() => ({
       lat: 0,
@@ -144,8 +152,9 @@ class RecordingServiceClass {
         trigger,
         timestamp,
         gps: {lat: gps.lat, lng: gps.lng},
-        speedKmh: gps.speedKmh,
-        duration: RECORDING_DURATION_SECONDS,
+        // Use speed captured at trigger time, not GPS speed at end of recording.
+        speedKmh: capturedSpeedKmh > 0 ? capturedSpeedKmh : gps.speedKmh,
+        duration: recordingDuration,
       });
 
       const currentStore = useAppStore.getState();
@@ -175,7 +184,7 @@ class RecordingServiceClass {
       const s = useAppStore.getState();
       s.setMode('listening');
       s.setRecordingTrigger(null);
-      s.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
+      s.setRecordingSecondsLeft(recordingDuration);
     }
   }
 }

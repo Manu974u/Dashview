@@ -14,6 +14,7 @@ const _defaultLanguage: Language = _deviceLocale.startsWith('fr') ? 'fr' : 'en';
 export type VideoQuality = '720p' | '1080p';
 export type AutoDeleteOption = 'never' | '7days' | '30days';
 export type AppMode = 'inactive' | 'listening' | 'recording' | 'saving';
+export type ClipDuration = 60 | 120 | 240 | 480;
 
 export interface ClipMetadata {
   id: string;
@@ -48,6 +49,7 @@ interface AppState {
   // Settings
   videoQuality: VideoQuality;
   autoDelete: AutoDeleteOption;
+  clipDuration: ClipDuration;
 
   // Onboarding
   onboardingComplete: boolean;
@@ -81,6 +83,7 @@ interface AppState {
   setClips: (clips: ClipMetadata[]) => void;
   setVideoQuality: (q: VideoQuality) => void;
   setAutoDelete: (v: AutoDeleteOption) => void;
+  setClipDuration: (d: ClipDuration) => void;
   setOnboardingComplete: (v: boolean) => void;
   setVoiceWarningShown: (v: boolean) => void;
   setLanguage: (l: Language) => void;
@@ -104,6 +107,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   clips: [],
   videoQuality: '1080p',
   autoDelete: 'never',
+  clipDuration: 60,
   onboardingComplete: false,
   voiceWarningShown: false,
   language: _defaultLanguage,
@@ -129,6 +133,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setClips: clips => set({clips}),
   setVideoQuality: q => set({videoQuality: q}),
   setAutoDelete: v => set({autoDelete: v}),
+  setClipDuration: d => set({clipDuration: d}),
   setOnboardingComplete: v => set({onboardingComplete: v}),
   setVoiceWarningShown: v => set({voiceWarningShown: v}),
   setLanguage: l => set({language: l, languageIsAutoDetected: false}),

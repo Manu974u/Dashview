@@ -12,7 +12,7 @@ import {
   ToastAndroid,
   Platform,
 } from 'react-native';
-import {useAppStore, AutoDeleteOption, VideoQuality} from '../store/useAppStore';
+import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration} from '../store/useAppStore';
 import {SensitivityLevel} from '../utils/speedCalc';
 import {deleteClip, loadClips} from '../services/ClipStorageService';
 import {SpeedMonitorService} from '../services/SpeedMonitorService';
@@ -30,6 +30,8 @@ export default function SettingsScreen(): React.JSX.Element {
   const setVideoQuality = useAppStore(s => s.setVideoQuality);
   const autoDelete = useAppStore(s => s.autoDelete);
   const setAutoDelete = useAppStore(s => s.setAutoDelete);
+  const clipDuration = useAppStore(s => s.clipDuration);
+  const setClipDuration = useAppStore(s => s.setClipDuration);
   const devMode = useAppStore(s => s.devMode);
   const tapVersionLabel = useAppStore(s => s.tapVersionLabel);
   const clearAllClips = useAppStore(s => s.clearAllClips);
@@ -203,10 +205,27 @@ export default function SettingsScreen(): React.JSX.Element {
         {/* Video */}
         <SectionHeader title={t('settings.sectionVideo')} />
         <View style={styles.card}>
-          <SettingRow
-            label={t('settings.clipDuration')}
-            value={t('settings.clipDurationValue')}
-          />
+          <View>
+            <Text style={styles.rowLabel}>{t('settings.clipDurationTitle')}</Text>
+            <Text style={styles.rowDesc}>{t('settings.clipDurationDesc')}</Text>
+            <View style={{marginTop: spacing.sm}}>
+              <SegmentedControl<ClipDuration>
+                options={[
+                  {value: 60,  label: t('settings.clipDuration60'),  desc: t('settings.clipDurationBatteryNote60')},
+                  {value: 120, label: t('settings.clipDuration120'), desc: t('settings.clipDurationBatteryNote120')},
+                  {value: 240, label: t('settings.clipDuration240'), desc: t('settings.clipDurationBatteryNote240')},
+                  {value: 480, label: t('settings.clipDuration480'), desc: t('settings.clipDurationBatteryNote480')},
+                ]}
+                selected={clipDuration}
+                onSelect={setClipDuration}
+              />
+            </View>
+            {clipDuration > 60 && (
+              <Text style={[styles.rowNote, {color: colors.warning, fontStyle: 'normal', marginTop: spacing.xs}]}>
+                {t('settings.clipDurationWarning')}
+              </Text>
+            )}
+          </View>
           <Divider />
           <View>
             <Text style={styles.rowLabel}>{t('settings.quality')}</Text>
@@ -405,13 +424,13 @@ function SettingRow({label, value, note}: {label: string; value: string; note?: 
   );
 }
 
-interface SegmentOption<T extends string> {
+interface SegmentOption<T extends string | number> {
   value: T;
   label: string;
   desc: string;
 }
 
-function SegmentedControl<T extends string>({
+function SegmentedControl<T extends string | number>({
   options,
   selected,
   onSelect,
