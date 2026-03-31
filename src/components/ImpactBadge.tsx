@@ -1,6 +1,7 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-import {colors} from '../theme/colors';
+import {Theme} from '../theme/colors';
+import {useTheme} from '../hooks/useTheme';
 
 interface Props {
   enabled: boolean;
@@ -11,6 +12,9 @@ export default function ImpactBadge({
   enabled,
   onToggle,
 }: Props): React.JSX.Element {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <TouchableOpacity
       onPress={onToggle}
@@ -29,36 +33,38 @@ export default function ImpactBadge({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    gap: 6,
-    borderWidth: 1,
-    minHeight: 48,
-  },
-  enabled: {
-    backgroundColor: colors.speedActive + '20',
-    borderColor: colors.speedActive,
-  },
-  disabled: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderColor: colors.speedInactive,
-  },
-  icon: {
-    fontSize: 14,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  labelEnabled: {
-    color: colors.speedActive,
-  },
-  labelDisabled: {
-    color: colors.speedInactive,
-  },
-});
+function createStyles(t: Theme) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      gap: 6,
+      borderWidth: 1,
+      minHeight: 48,
+    },
+    enabled: {
+      backgroundColor: t.speedActive + '20',
+      borderColor: t.speedActive,
+    },
+    disabled: {
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      borderColor: t.speedInactive,
+    },
+    icon: {
+      fontSize: 14,
+    },
+    label: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    labelEnabled: {
+      color: t.speedActive,
+    },
+    labelDisabled: {
+      color: t.speedInactive,
+    },
+  });
+}

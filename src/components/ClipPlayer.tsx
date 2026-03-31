@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,7 +8,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import Video, {OnLoadData, OnProgressData} from 'react-native-video';
-import {colors} from '../theme/colors';
+import {Theme} from '../theme/colors';
+import {useTheme} from '../hooks/useTheme';
 import {formatDuration} from '../utils/datetime';
 
 interface Props {
@@ -17,6 +18,8 @@ interface Props {
 }
 
 export default function ClipPlayer({uri, onClose}: Props): React.JSX.Element {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [paused, setPaused] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -78,70 +81,72 @@ export default function ClipPlayer({uri, onClose}: Props): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
-    zIndex: 100,
-  },
-  video: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-  },
-  closeBtn: {
-    margin: 16,
-    alignSelf: 'flex-end',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeBtnText: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  bottomBar: {
-    padding: 16,
-    gap: 8,
-  },
-  progressTrack: {
-    height: 3,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.accent,
-    borderRadius: 2,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  timeText: {
-    color: colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '500',
-    width: 40,
-  },
-  playBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playBtnText: {
-    color: colors.textPrimary,
-    fontSize: 20,
-  },
-});
+function createStyles(t: Theme) {
+  return StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: '#000',
+      zIndex: 100,
+    },
+    video: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'space-between',
+    },
+    closeBtn: {
+      margin: 16,
+      alignSelf: 'flex-end',
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    closeBtnText: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    bottomBar: {
+      padding: 16,
+      gap: 8,
+    },
+    progressTrack: {
+      height: 3,
+      backgroundColor: 'rgba(255,255,255,0.3)',
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: t.accent,
+      borderRadius: 2,
+    },
+    timeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    timeText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '500',
+      width: 40,
+    },
+    playBtn: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    playBtnText: {
+      color: '#FFFFFF',
+      fontSize: 20,
+    },
+  });
+}

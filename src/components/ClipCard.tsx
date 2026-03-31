@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 import {ClipMetadata} from '../store/useAppStore';
-import {colors} from '../theme/colors';
+import {Theme} from '../theme/colors';
+import {useTheme} from '../hooks/useTheme';
 import {getDisplayDateTime, formatDuration} from '../utils/datetime';
 
 interface Props {
@@ -33,6 +34,8 @@ export default function ClipCard({
   selected = false,
   onLongPress,
 }: Props): React.JSX.Element {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const isVoice = clip.trigger === 'voice';
 
   function handlePress() {
@@ -122,107 +125,109 @@ export default function ClipCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    overflow: 'hidden',
-    flex: 1,
-    margin: 6,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardSelected: {
-    borderColor: colors.accent,
-    borderWidth: 2,
-  },
-  thumbnailContainer: {
-    height: 110,
-    backgroundColor: colors.surfaceElevated,
-  },
-  thumbnail: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  thumbnailOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-  },
-  durationPill: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  durationText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  checkbox: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxSelected: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 14,
-  },
-  info: {
-    padding: 10,
-    gap: 4,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    marginBottom: 2,
-  },
-  badgeVoice: {
-    backgroundColor: colors.voice + '20',
-  },
-  badgeSpeed: {
-    backgroundColor: colors.speed + '20',
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  badgeVoiceText: {
-    color: colors.voice,
-  },
-  badgeSpeedText: {
-    color: colors.speed,
-  },
-  datetime: {
-    color: colors.textSecondary,
-    fontSize: 11,
-  },
-  speed: {
-    color: colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});
+function createStyles(t: Theme) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: t.surface,
+      borderRadius: 14,
+      overflow: 'hidden',
+      flex: 1,
+      margin: 6,
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    cardSelected: {
+      borderColor: t.accent,
+      borderWidth: 2,
+    },
+    thumbnailContainer: {
+      height: 110,
+      backgroundColor: t.surfaceElevated,
+    },
+    thumbnail: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    thumbnailOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.1)',
+    },
+    durationPill: {
+      position: 'absolute',
+      bottom: 6,
+      right: 6,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    durationText: {
+      color: '#FFFFFF',
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    checkbox: {
+      position: 'absolute',
+      top: 6,
+      left: 6,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: '#FFFFFF',
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    checkboxSelected: {
+      backgroundColor: t.accent,
+      borderColor: t.accent,
+    },
+    checkmark: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
+      lineHeight: 14,
+    },
+    info: {
+      padding: 10,
+      gap: 4,
+    },
+    badge: {
+      alignSelf: 'flex-start',
+      borderRadius: 6,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      marginBottom: 2,
+    },
+    badgeVoice: {
+      backgroundColor: t.voice + '20',
+    },
+    badgeSpeed: {
+      backgroundColor: t.speed + '20',
+    },
+    badgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    badgeVoiceText: {
+      color: t.voice,
+    },
+    badgeSpeedText: {
+      color: t.speed,
+    },
+    datetime: {
+      color: t.textSecondary,
+      fontSize: 11,
+    },
+    speed: {
+      color: t.textPrimary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+  });
+}

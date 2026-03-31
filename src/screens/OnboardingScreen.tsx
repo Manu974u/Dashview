@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect, useCallback} from 'react';
+import React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,9 @@ import {
   AppState,
   AppStateStatus,
 } from 'react-native';
-import {colors} from '../theme/colors';
+import {Theme} from '../theme/colors';
 import {spacing, borderRadius} from '../theme/spacing';
+import {useTheme} from '../hooks/useTheme';
 import {
   requestCameraPermission,
   requestMicrophonePermission,
@@ -34,6 +35,8 @@ interface Slide {
 
 export default function OnboardingScreen(): React.JSX.Element {
   const {t} = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const SLIDES: Slide[] = [
     {
@@ -335,12 +338,14 @@ function PermissionRow({
   title: string;
   desc: string;
 }): React.JSX.Element {
+  const t = useTheme();
+  const s = useMemo(() => createStyles(t), [t]);
   return (
-    <View style={styles.permRow}>
-      <Text style={styles.permRowIcon}>{icon}</Text>
-      <View style={styles.permRowText}>
-        <Text style={styles.permRowTitle}>{title}</Text>
-        <Text style={styles.permRowDesc}>{desc}</Text>
+    <View style={s.permRow}>
+      <Text style={s.permRowIcon}>{icon}</Text>
+      <View style={s.permRowText}>
+        <Text style={s.permRowTitle}>{title}</Text>
+        <Text style={s.permRowDesc}>{desc}</Text>
       </View>
     </View>
   );
@@ -348,181 +353,189 @@ function PermissionRow({
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.xl,
-    paddingTop: 64,
-    paddingBottom: spacing.xxl,
-    alignItems: 'stretch',
-  },
+function createStyles(t: Theme) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.xl,
+      paddingTop: 64,
+      paddingBottom: spacing.xxl,
+      alignItems: 'stretch',
+    },
 
-  // ── Intro slides ──────────────────────────────────────────────────────────
-  slide: {
-    width: SCREEN_WIDTH,
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: 80,
-    paddingBottom: 160, // leave room for dots + button
-  },
-  emoji: {
-    fontSize: 72,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
-  },
-  slideTitle: {
-    color: colors.textPrimary,
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: 36,
-  },
-  slideBody: {
-    color: colors.textSecondary,
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 300,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: spacing.xl,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    width: 20,
-    backgroundColor: colors.accent,
-  },
-  nextBtn: {
-    marginHorizontal: spacing.xl,
-    backgroundColor: colors.accent,
-    borderRadius: borderRadius.lg,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  btnDisabled: {
-    opacity: 0.5,
-  },
-  nextBtnText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
+    // ── Intro slides ──────────────────────────────────────────────────────────
+    slide: {
+      width: SCREEN_WIDTH,
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+      paddingTop: 80,
+      paddingBottom: 160,
+    },
+    emoji: {
+      fontSize: 72,
+      marginBottom: spacing.lg,
+      textAlign: 'center',
+    },
+    slideTitle: {
+      color: t.textPrimary,
+      fontSize: 28,
+      fontWeight: '900',
+      textAlign: 'center',
+      marginBottom: spacing.md,
+      lineHeight: 36,
+      letterSpacing: 0.3,
+    },
+    slideBody: {
+      color: t.textSecondary,
+      fontSize: 16,
+      textAlign: 'center',
+      lineHeight: 24,
+      maxWidth: 300,
+    },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 8,
+      marginBottom: spacing.xl,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: t.textSecondary + '40',
+    },
+    dotActive: {
+      width: 20,
+      backgroundColor: t.accent,
+    },
+    nextBtn: {
+      marginHorizontal: spacing.xl,
+      backgroundColor: t.accent,
+      borderRadius: borderRadius.lg,
+      height: 56,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+    btnDisabled: {
+      opacity: 0.5,
+    },
+    nextBtnText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
 
-  // ── Permission slides ──────────────────────────────────────────────────────
-  permEmoji: {
-    fontSize: 56,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  permTitle: {
-    color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  permBody: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 22,
-  },
-  permList: {
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-  permRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-  },
-  permRowIcon: {
-    fontSize: 22,
-  },
-  permRowText: {
-    flex: 1,
-  },
-  permRowTitle: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  permRowDesc: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-  },
+    // ── Permission slides ──────────────────────────────────────────────────────
+    permEmoji: {
+      fontSize: 56,
+      textAlign: 'center',
+      marginBottom: spacing.lg,
+    },
+    permTitle: {
+      color: t.textPrimary,
+      fontSize: 24,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    permBody: {
+      color: t.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginBottom: spacing.xl,
+      lineHeight: 22,
+    },
+    permList: {
+      gap: spacing.sm,
+      marginBottom: spacing.xl,
+    },
+    permRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      backgroundColor: t.surface,
+      borderRadius: 16,
+      padding: spacing.md,
+      shadowColor: t.shadow,
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 1,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    permRowIcon: {
+      fontSize: 22,
+    },
+    permRowText: {
+      flex: 1,
+    },
+    permRowTitle: {
+      color: t.textPrimary,
+      fontSize: 15,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    permRowDesc: {
+      color: t.textSecondary,
+      fontSize: 13,
+      lineHeight: 18,
+    },
 
-  // ── Overlay phase ──────────────────────────────────────────────────────────
-  overlayNotGrantedWarning: {
-    backgroundColor: '#FBE9E715',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FF7043',
-    padding: 14,
-    marginBottom: 12,
-  },
-  overlayNotGrantedText: {
-    color: '#BF360C',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  overlayInstruction: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    lineHeight: 20,
-    fontStyle: 'italic',
-  },
-  grantedBadge: {
-    backgroundColor: '#1B5E2015',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: '#1B5E2040',
-  },
-  grantedBadgeText: {
-    color: '#1B5E20',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  skipBtn: {
-    marginTop: spacing.sm,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  skipBtnText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-});
+    // ── Overlay phase ──────────────────────────────────────────────────────────
+    overlayNotGrantedWarning: {
+      backgroundColor: t.error + '15',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: t.error + '80',
+      padding: 14,
+      marginBottom: 12,
+    },
+    overlayNotGrantedText: {
+      color: t.error,
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    overlayInstruction: {
+      color: t.textSecondary,
+      fontSize: 13,
+      textAlign: 'center',
+      marginTop: spacing.sm,
+      lineHeight: 20,
+      fontStyle: 'italic',
+    },
+    grantedBadge: {
+      backgroundColor: t.success + '15',
+      borderRadius: borderRadius.md,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: t.success + '40',
+    },
+    grantedBadgeText: {
+      color: t.success,
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    skipBtn: {
+      marginTop: spacing.sm,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+    },
+    skipBtnText: {
+      color: t.textSecondary,
+      fontSize: 12,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+  });
+}

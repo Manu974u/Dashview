@@ -6,6 +6,7 @@ import {Language} from '../i18n/translations';
 
 const STORAGE_KEY_CLIP_DURATION = 'dashviewcar_clip_duration';
 const STORAGE_KEY_SENSITIVITY = 'dashviewcar_sensitivity';
+const STORAGE_KEY_THEME_MODE = 'dashviewcar_theme_mode';
 
 // Detect device locale at startup — used as the default language.
 // NativeModules.I18nManager.localeIdentifier returns e.g. "fr_FR", "en_US".
@@ -16,6 +17,7 @@ const _deviceLocale: string =
 const _defaultLanguage: Language = _deviceLocale.startsWith('fr') ? 'fr' : 'en';
 
 export type VideoQuality = '720p' | '1080p';
+export type ThemeMode = 'auto' | 'light' | 'dark';
 export type AutoDeleteOption = 'never' | '7days' | '30days';
 export type AppMode = 'inactive' | 'listening' | 'recording' | 'saving';
 export type ClipDuration = 60 | 120 | 240 | 480;
@@ -66,6 +68,9 @@ interface AppState {
   // true = language was set automatically from device locale; false = user manually chose it
   languageIsAutoDetected: boolean;
 
+  // Theme
+  themeMode: ThemeMode;
+
   // Dev mode
   devMode: boolean;
   devModeVersionTaps: number;
@@ -92,6 +97,7 @@ interface AppState {
   setVoiceWarningShown: (v: boolean) => void;
   setLanguage: (l: Language) => void;
   setLanguageAutoDetected: (v: boolean) => void;
+  setThemeMode: (m: ThemeMode) => void;
   tapVersionLabel: () => void;
   clearAllClips: () => void;
   hydrate: () => Promise<void>;
@@ -117,6 +123,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   voiceWarningShown: false,
   language: _defaultLanguage,
   languageIsAutoDetected: true,
+  themeMode: 'auto',
   devMode: false,
   devModeVersionTaps: 0,
 
@@ -149,6 +156,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setVoiceWarningShown: v => set({voiceWarningShown: v}),
   setLanguage: l => set({language: l, languageIsAutoDetected: false}),
   setLanguageAutoDetected: v => set({languageIsAutoDetected: v}),
+  setThemeMode: m => {
+    set({themeMode: m});
+    AsyncStorage.setItem(STORAGE_KEY_THEME_MODE, m).catch(() => {});
+  },
   tapVersionLabel: () => {
     const taps = get().devModeVersionTaps + 1;
     if (taps >= 5) {
@@ -160,9 +171,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearAllClips: () => set({clips: []}),
   hydrate: async () => {
     try {
-      const [duration, sensitivity] = await Promise.all([
+      const [duration, sensitivity, themeMode] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY_CLIP_DURATION),
         AsyncStorage.getItem(STORAGE_KEY_SENSITIVITY),
+        AsyncStorage.getItem(STORAGE_KEY_THEME_MODE),
       ]);
       const update: Partial<AppState> = {};
       if (duration) {
@@ -173,6 +185,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (sensitivity && (['low', 'medium', 'high'] as string[]).includes(sensitivity)) {
         update.sensitivity = sensitivity as SensitivityLevel;
+      }
+      if (themeMode && (['auto', 'light', 'dark'] as string[]).includes(themeMode)) {
+        update.themeMode = themeMode as ThemeMode;
       }
       if (Object.keys(update).length > 0) {
         set(update);

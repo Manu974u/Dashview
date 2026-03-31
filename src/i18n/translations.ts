@@ -85,7 +85,12 @@ export const translations = {
       title: 'Your Clips',
       emptyTitle: 'No clips yet',
       emptyBody: 'Say "Go Dash" while Voice Detection is active, or run a test to get started.',
+      emptyAction: 'Go record your first clip →',
       shareMessage: 'DashViewCar clip — {timestamp}',
+      cancel: 'Cancel',
+      delete: 'Delete',
+      all: 'All',
+      none: 'None',
     },
 
     // ── OnboardingScreen ───────────────────────────────────────────────────
@@ -203,7 +208,7 @@ export const translations = {
 
       sectionAbout: 'About',
       appVersion: 'App Version',
-      appVersionValue: 'DashViewCar v1.0.2',
+      appVersionValue: 'DashViewCar v1.0.3',
 
       sectionDev: 'Developer',
       devReloadClips: '🔄  Reload clips from disk',
@@ -220,6 +225,13 @@ export const translations = {
       languageAutoDetected: 'Detected from your device settings',
       langEn: 'English',
       langFr: 'Français',
+
+      sectionTheme: 'THEME',
+      themeModeLabel: 'App Theme',
+      themeModeAuto: 'Auto',
+      themeModeLight: 'Day',
+      themeModeDark: 'Night',
+      themeModeAutoDesc: 'Switches automatically at 6:00 and 20:00',
     },
   },
 
@@ -310,7 +322,12 @@ export const translations = {
       emptyTitle: 'Aucun clip pour l\'instant',
       emptyBody:
         'Dites "Go Dash" avec la détection vocale active, ou lancez un test pour commencer.',
+      emptyAction: 'Enregistrer votre premier clip →',
       shareMessage: 'Clip DashViewCar — {timestamp}',
+      cancel: 'Annuler',
+      delete: 'Supprimer',
+      all: 'Tout',
+      none: 'Aucun',
     },
 
     // ── OnboardingScreen ───────────────────────────────────────────────────
@@ -438,7 +455,7 @@ export const translations = {
 
       sectionAbout: 'À propos',
       appVersion: 'Version',
-      appVersionValue: 'DashViewCar v1.0.2',
+      appVersionValue: 'DashViewCar v1.0.3',
 
       sectionDev: 'Développeur',
       devReloadClips: '🔄  Recharger les clips depuis le disque',
@@ -458,6 +475,13 @@ export const translations = {
       languageAutoDetected: 'Détectée depuis les paramètres de votre appareil',
       langEn: 'English',
       langFr: 'Français',
+
+      sectionTheme: 'THÈME',
+      themeModeLabel: "Thème de l'app",
+      themeModeAuto: 'Auto',
+      themeModeLight: 'Jour',
+      themeModeDark: 'Nuit',
+      themeModeAutoDesc: 'Bascule automatiquement à 6h et 20h',
     },
   },
 } as const;

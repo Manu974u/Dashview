@@ -25,11 +25,11 @@ const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
  * this task keeps the JS engine alive.
  */
 const backgroundTask = async (_taskData: unknown) => {
-  console.log('[ForegroundService] background task started — keeping process alive');
+  if (__DEV__) { console.log('[ForegroundService] background task started — keeping process alive'); }
   while (BackgroundActions.isRunning()) {
     await sleep(10_000);
   }
-  console.log('[ForegroundService] background task ended');
+  if (__DEV__) { console.log('[ForegroundService] background task ended'); }
 };
 
 const serviceOptions = {

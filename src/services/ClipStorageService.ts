@@ -13,13 +13,13 @@ export const CLIPS_DIR = `${RNFS.ExternalDirectoryPath}/clips`;
 export const MAX_CLIPS = 20;
 
 export async function ensureClipsDir(): Promise<void> {
-  console.log('[ClipStorage] CLIPS_DIR:', CLIPS_DIR);
+  if (__DEV__) { console.log('[ClipStorage] CLIPS_DIR:', CLIPS_DIR); }
   try {
     const exists = await RNFS.exists(CLIPS_DIR);
-    console.log('[ClipStorage] CLIPS_DIR exists:', exists);
+    if (__DEV__) { console.log('[ClipStorage] CLIPS_DIR exists:', exists); }
     if (!exists) {
       await RNFS.mkdir(CLIPS_DIR);
-      console.log('[ClipStorage] CLIPS_DIR created');
+      if (__DEV__) { console.log('[ClipStorage] CLIPS_DIR created'); }
     }
   } catch (e: any) {
     console.error('[ClipStorage] ensureClipsDir ERROR:', e?.message ?? e);
@@ -41,28 +41,28 @@ export async function saveClip(
 ): Promise<ClipMetadata> {
   // Strip file:// prefix — RNFS requires absolute paths, not URIs
   const srcPath = tempPath.startsWith('file://') ? tempPath.slice(7) : tempPath;
-  console.log('[ClipStorage] saveClip src:', srcPath);
-  console.log('[ClipStorage] saveClip dest filename:', filename);
+  if (__DEV__) { console.log('[ClipStorage] saveClip src:', srcPath); }
+  if (__DEV__) { console.log('[ClipStorage] saveClip dest filename:', filename); }
 
   await ensureClipsDir();
 
   const srcExists = await RNFS.exists(srcPath);
-  console.log('[ClipStorage] src file exists:', srcExists);
+  if (__DEV__) { console.log('[ClipStorage] src file exists:', srcExists); }
   if (!srcExists) {
     throw new Error('Source video file not found: ' + srcPath);
   }
 
   const destPath = `${CLIPS_DIR}/${filename}`;
-  console.log('[ClipStorage] destPath:', destPath);
+  if (__DEV__) { console.log('[ClipStorage] destPath:', destPath); }
 
   // Try move first; fall back to copy+delete if cross-filesystem move fails.
   try {
     await RNFS.moveFile(srcPath, destPath);
-    console.log('[ClipStorage] moveFile OK');
+    if (__DEV__) { console.log('[ClipStorage] moveFile OK'); }
   } catch (moveErr: any) {
     console.warn('[ClipStorage] moveFile failed, trying copy:', moveErr?.message);
     await RNFS.copyFile(srcPath, destPath);
-    console.log('[ClipStorage] copyFile OK');
+    if (__DEV__) { console.log('[ClipStorage] copyFile OK'); }
     try {
       await RNFS.unlink(srcPath);
     } catch {}
@@ -72,7 +72,7 @@ export async function saveClip(
   const clip: ClipMetadata = {id, filename, filepath: destPath, ...meta};
 
   await RNFS.writeFile(metaPath(destPath), JSON.stringify(clip, null, 2), 'utf8');
-  console.log('[ClipStorage] metadata written — clip saved:', filename);
+  if (__DEV__) { console.log('[ClipStorage] metadata written — clip saved:', filename); }
 
   return clip;
 }

@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useCallback, useState} from 'react';
+import React, {useRef, useEffect, useCallback, useState, useMemo} from 'react';
 import {
   View,
   Text,
@@ -30,9 +30,10 @@ import {
 } from '../services/ForegroundService';
 import {saveClip, ensureClipsDir} from '../services/ClipStorageService';
 import {formatDuration} from '../utils/datetime';
-import {colors} from '../theme/colors';
+import {Theme, lightTheme} from '../theme/colors';
 import {spacing, borderRadius} from '../theme/spacing';
 import {useTranslation} from '../i18n/useTranslation';
+import {useTheme} from '../hooks/useTheme';
 
 const TEST_COUNTDOWN_SECONDS = 5;
 const TEST_RECORDING_SECONDS = 10;
@@ -40,6 +41,8 @@ type TestPhase = 'countdown' | 'recording' | 'saving' | null;
 
 export default function HomeScreen(): React.JSX.Element {
   const {t} = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const cameraRef = useRef<Camera>(null);
   const backCamera = useCameraDevice('back');
   const testTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -156,7 +159,7 @@ export default function HomeScreen(): React.JSX.Element {
 
   const voiceCardBorder = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.border, colors.voice],
+    outputRange: [theme.border, theme.voice],
   });
 
   // ── Camera session callbacks ──────────────────────────────────────────────
@@ -718,14 +721,8 @@ export default function HomeScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <StatusBar
-        barStyle={isRecording || testPhase !== null ? 'light-content' : 'dark-content'}
-        backgroundColor={
-          isRecording
-            ? 'transparent'
-            : testPhase !== null
-            ? 'transparent'
-            : colors.background
-        }
+        barStyle={isRecording || testPhase !== null ? 'light-content' : theme.textPrimary === '#FFFFFF' ? 'light-content' : 'dark-content'}
+        backgroundColor={isRecording || testPhase !== null ? 'transparent' : theme.background}
         translucent={isRecording || testPhase !== null}
       />
 
@@ -841,8 +838,8 @@ export default function HomeScreen(): React.JSX.Element {
       {!isRecording && testPhase === null && (
         <View style={[styles.safeArea, {paddingTop: statusBarHeight}]}>
           <View style={styles.header}>
-            <Text style={styles.title}>{t('home.title')}</Text>
-            <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
+            <Text style={styles.appLogo}>DashViewCar</Text>
+            <Text style={styles.slogan}>Shout it loudly, Record it softly, Drive safely !</Text>
           </View>
 
           {/* Overlay permission warning banner */}
@@ -915,8 +912,8 @@ export default function HomeScreen(): React.JSX.Element {
                   value={voiceActive}
                   onValueChange={handleVoiceToggle}
                   disabled={isSaving}
-                  trackColor={{false: colors.border, true: colors.voice + '60'}}
-                  thumbColor={voiceActive ? colors.voice : colors.textSecondary}
+                  trackColor={{false: theme.border, true: theme.voice + '60'}}
+                  thumbColor={voiceActive ? theme.voice : theme.textSecondary}
                   accessibilityLabel="Toggle voice detection"
                 />
               </View>
@@ -926,7 +923,7 @@ export default function HomeScreen(): React.JSX.Element {
             <View
               style={[
                 styles.card,
-                speedDetectionEnabled && {borderColor: colors.speed, borderWidth: 2},
+                speedDetectionEnabled && {borderColor: theme.speed, borderWidth: 2},
               ]}>
               <View style={styles.cardHeader}>
                 <View style={[styles.cardIconBox, {backgroundColor: '#FFF8E1'}]}>
@@ -940,7 +937,7 @@ export default function HomeScreen(): React.JSX.Element {
                       : t('home.speedIdle')}
                   </Text>
                   {speedDetectionEnabled && lastSpeedDrop && (
-                    <Text style={[styles.cardSubtitle, {color: colors.speed, fontWeight: '600'}]}>
+                    <Text style={[styles.cardSubtitle, {color: theme.speed, fontWeight: '600'}]}>
                       {t('home.speedLastDrop', {from: String(lastSpeedDrop.from), to: String(lastSpeedDrop.to)})}
                     </Text>
                   )}
@@ -948,8 +945,8 @@ export default function HomeScreen(): React.JSX.Element {
                 <Switch
                   value={speedDetectionEnabled}
                   onValueChange={handleSpeedToggle}
-                  trackColor={{false: colors.border, true: colors.speed + '60'}}
-                  thumbColor={speedDetectionEnabled ? colors.speed : colors.textSecondary}
+                  trackColor={{false: theme.border, true: theme.speed + '60'}}
+                  thumbColor={speedDetectionEnabled ? theme.speed : theme.textSecondary}
                   accessibilityLabel="Toggle speed protection"
                 />
               </View>
@@ -963,7 +960,7 @@ export default function HomeScreen(): React.JSX.Element {
                 </View>
                 <View style={styles.cardContent}>
                   <Text
-                    style={[styles.cardTitle, testDisabled && {color: colors.textSecondary}]}>
+                    style={[styles.cardTitle, testDisabled && {color: theme.textSecondary}]}>
                     {t('home.testTitle')}
                   </Text>
                   <Text style={styles.cardSubtitle}>{t('home.testDesc')}</Text>
@@ -977,7 +974,7 @@ export default function HomeScreen(): React.JSX.Element {
                   <Text
                     style={[
                       styles.testBtnLabel,
-                      testDisabled && {color: colors.textSecondary},
+                      testDisabled && {color: theme.textSecondary},
                     ]}>
                     {t('home.testBtn')}
                   </Text>
@@ -994,11 +991,11 @@ export default function HomeScreen(): React.JSX.Element {
                   style={[
                     styles.pill,
                     {
-                      backgroundColor: colors.voice + '18',
-                      borderColor: colors.voice + '40',
+                      backgroundColor: theme.voice + '30',
+                      borderColor: theme.voice + '60',
                     },
                   ]}>
-                  <Text style={[styles.pillText, {color: colors.voice}]}>
+                  <Text style={[styles.pillText, {color: theme.voice}]}>
                     {isSaving ? t('home.pillSaving') : t('home.pillListening')}
                   </Text>
                 </View>
@@ -1008,11 +1005,11 @@ export default function HomeScreen(): React.JSX.Element {
                   style={[
                     styles.pill,
                     {
-                      backgroundColor: colors.speed + '18',
-                      borderColor: colors.speed + '40',
+                      backgroundColor: theme.speed + '30',
+                      borderColor: theme.speed + '60',
                     },
                   ]}>
-                  <Text style={[styles.pillText, {color: colors.speed}]}>
+                  <Text style={[styles.pillText, {color: theme.speed}]}>
                     ⚡ {Math.round(currentSpeedKmh)} km/h
                   </Text>
                 </View>
@@ -1051,348 +1048,348 @@ export default function HomeScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  // 1×1 hidden camera — keeps session alive for instant startRecording()
-  cameraHidden: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    opacity: 0,
-  },
+function createStyles(t: Theme) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
+    safeArea: {
+      flex: 1,
+    },
+    // 1×1 hidden camera — keeps session alive for instant startRecording()
+    cameraHidden: {
+      position: 'absolute',
+      width: 1,
+      height: 1,
+      opacity: 0,
+    },
 
-  // ── Recording screen ──────────────────────────────────────────────────────
-  recordingBorder: {
-    borderWidth: 4,
-    borderColor: colors.recordingRed,
-  },
-  recTopBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 48, // below status bar (translucent)
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  recDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.recordingRed,
-  },
-  recTimer: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 1,
-  },
-  triggerBadgeWrapper: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  triggerBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-  },
-  recBottom: {
-    position: 'absolute',
-    bottom: 60,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  stopEarlyBtn: {
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    minWidth: 180,
-    alignItems: 'center',
-  },
-  stopEarlyLabel: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
+    // ── Recording screen ──────────────────────────────────────────────────────
+    recordingBorder: {
+      borderWidth: 4,
+      borderColor: t.recordingRed,
+    },
+    recTopBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingTop: 48, // below status bar (translucent)
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
+      gap: spacing.sm,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    recDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: t.recordingRed,
+    },
+    recTimer: {
+      color: '#FFFFFF',
+      fontSize: 22,
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
+      letterSpacing: 1,
+    },
+    triggerBadgeWrapper: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    triggerBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontWeight: '700',
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.full,
+      overflow: 'hidden',
+    },
+    recBottom: {
+      position: 'absolute',
+      bottom: 60,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+    },
+    stopEarlyBtn: {
+      paddingHorizontal: spacing.xxl,
+      paddingVertical: spacing.lg,
+      borderRadius: borderRadius.full,
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderWidth: 2,
+      borderColor: '#FFFFFF',
+      minWidth: 180,
+      alignItems: 'center',
+    },
+    stopEarlyLabel: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
 
-  // ── Test overlay ──────────────────────────────────────────────────────────
-  testOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-  },
-  testCenter: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  testCountdownNumber: {
-    color: '#FFFFFF',
-    fontSize: 96,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
+    // ── Test overlay ──────────────────────────────────────────────────────────
+    testOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'space-between',
+    },
+    testCenter: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    testCountdownNumber: {
+      color: '#FFFFFF',
+      fontSize: 96,
+      fontWeight: '800',
+      textAlign: 'center',
+    },
 
-  // ── Overlay warning banner ────────────────────────────────────────────────
-  overlayWarningBanner: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-    backgroundColor: '#FFF8E1',
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#FFD600',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  overlayWarningText: {
-    color: '#5D4037',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  overlayWarningSubText: {
-    color: '#795548',
-    fontSize: 12,
-    marginTop: 2,
-  },
+    // ── Overlay warning banner ────────────────────────────────────────────────
+    overlayWarningBanner: {
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+      backgroundColor: '#FFF8E1',
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: '#FFD600',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    overlayWarningText: {
+      color: '#5D4037',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    overlayWarningSubText: {
+      color: '#795548',
+      fontSize: 12,
+      marginTop: 2,
+    },
 
-  // ── Battery optimization banner ───────────────────────────────────────────
-  batteryWarningBanner: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-    backgroundColor: '#E8F5E9',
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#43A047',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  batteryWarningText: {
-    color: '#1B5E20',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  batteryWarningSubText: {
-    color: '#2E7D32',
-    fontSize: 12,
-    marginTop: 2,
-  },
+    // ── Battery optimization banner ───────────────────────────────────────────
+    batteryWarningBanner: {
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+      backgroundColor: '#E8F5E9',
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: '#43A047',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    batteryWarningText: {
+      color: '#1B5E20',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    batteryWarningSubText: {
+      color: '#2E7D32',
+      fontSize: 12,
+      marginTop: 2,
+    },
 
-  // ── Honor freeze warning banner ───────────────────────────────────────────
-  honorWarningBanner: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-    backgroundColor: '#FBE9E7',
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#FF7043',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  honorWarningTitle: {
-    color: '#BF360C',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  honorWarningBody: {
-    color: '#5D4037',
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 17,
-  },
-  honorWarningAction: {
-    color: '#FF7043',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
-  },
+    // ── Honor freeze warning banner ───────────────────────────────────────────
+    honorWarningBanner: {
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+      backgroundColor: '#FBE9E7',
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: '#FF7043',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    honorWarningTitle: {
+      color: '#BF360C',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    honorWarningBody: {
+      color: '#5D4037',
+      fontSize: 12,
+      marginTop: 2,
+      lineHeight: 17,
+    },
+    honorWarningAction: {
+      color: '#FF7043',
+      fontSize: 12,
+      fontWeight: '700',
+      marginTop: 4,
+    },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    alignItems: 'center',
-  },
-  title: {
-    color: '#1A1A1A',
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: '#C8DEC8',
-    fontSize: 13,
-    fontStyle: 'italic',
-    marginTop: spacing.xs,
-    textAlign: 'center',
-    lineHeight: 20,
-    textShadowColor: 'rgba(0,60,0,0.2)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 3,
-  },
+    // ── Header ────────────────────────────────────────────────────────────────
+    header: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
+      alignItems: 'center',
+    },
+    appLogo: {
+      color: t.accent,
+      fontSize: 18,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    slogan: {
+      fontStyle: 'italic',
+      fontSize: 13,
+      fontWeight: '300',
+      color: t.accent + 'CC',
+      textAlign: 'center',
+      letterSpacing: 0.3,
+      marginTop: 4,
+      paddingHorizontal: 24,
+    },
 
-  // ── Cards ─────────────────────────────────────────────────────────────────
-  cardsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    shadowColor: 'rgba(0,60,0,0.12)',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardDisabled: {
-    opacity: 0.55,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  cardIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardIconText: {
-    fontSize: 22,
-  },
-  cardContent: {
-    flex: 1,
-    gap: 2,
-  },
-  cardTitle: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardSubtitle: {
-    color: colors.textSecondary,
-    fontSize: 13,
-  },
+    // ── Cards ─────────────────────────────────────────────────────────────────
+    cardsContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+    },
+    card: {
+      backgroundColor: t.surface,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: t.cardBorder,
+      padding: spacing.md,
+      shadowColor: t.shadow,
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 1,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    cardDisabled: {
+      opacity: 0.55,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    cardIconBox: {
+      width: 44,
+      height: 44,
+      borderRadius: borderRadius.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cardIconText: {
+      fontSize: 22,
+    },
+    cardContent: {
+      flex: 1,
+      gap: 2,
+    },
+    cardTitle: {
+      color: t.textPrimary,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    cardSubtitle: {
+      color: t.textSecondary,
+      fontSize: 13,
+    },
 
-  // ── Test button ───────────────────────────────────────────────────────────
-  testBtn: {
-    backgroundColor: colors.success,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  testBtnDisabled: {
-    backgroundColor: colors.border,
-  },
-  testBtnLabel: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+    // ── Test button ───────────────────────────────────────────────────────────
+    testBtn: {
+      backgroundColor: t.success,
+      borderRadius: borderRadius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    testBtnDisabled: {
+      backgroundColor: t.border,
+    },
+    testBtnLabel: {
+      color: '#FFFFFF',
+      fontSize: 13,
+      fontWeight: '700',
+    },
 
-  // ── Status pills ──────────────────────────────────────────────────────────
-  pillsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  pill: {
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  pillText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
+    // ── Status pills ──────────────────────────────────────────────────────────
+    pillsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+    },
+    pill: {
+      borderRadius: borderRadius.full,
+      borderWidth: 1,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    pillText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
 
-  // ── Warning modal ─────────────────────────────────────────────────────────
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  modalCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    width: '100%',
-    gap: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  modalTitle: {
-    color: colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  modalBody: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  modalConfirmBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  modalConfirmText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  modalCancelBtn: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  modalCancelText: {
-    color: colors.textSecondary,
-    fontSize: 15,
-    fontWeight: '500',
-  },
-});
+    // ── Warning modal ─────────────────────────────────────────────────────────
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: t.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.lg,
+    },
+    modalCard: {
+      backgroundColor: t.surface,
+      borderRadius: borderRadius.xl,
+      padding: spacing.lg,
+      width: '100%',
+      gap: spacing.md,
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 8},
+      shadowOpacity: 0.15,
+      shadowRadius: 24,
+      elevation: 12,
+    },
+    modalTitle: {
+      color: t.textPrimary,
+      fontSize: 20,
+      fontWeight: '800',
+      textAlign: 'center',
+    },
+    modalBody: {
+      color: t.textSecondary,
+      fontSize: 14,
+      lineHeight: 22,
+      textAlign: 'center',
+    },
+    modalConfirmBtn: {
+      backgroundColor: t.accent,
+      borderRadius: borderRadius.lg,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    modalConfirmText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    modalCancelBtn: {
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+    },
+    modalCancelText: {
+      color: t.textSecondary,
+      fontSize: 15,
+      fontWeight: '500',
+    },
+  });
+}

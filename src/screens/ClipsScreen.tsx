@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,21 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useAppStore, ClipMetadata} from '../store/useAppStore';
 import {loadClips, deleteClip} from '../services/ClipStorageService';
 import ClipCard from '../components/ClipCard';
 import ClipPlayer from '../components/ClipPlayer';
-import {colors} from '../theme/colors';
+import {Theme} from '../theme/colors';
 import {spacing} from '../theme/spacing';
 import {useTranslation} from '../i18n/useTranslation';
+import {useTheme} from '../hooks/useTheme';
 
 export default function ClipsScreen(): React.JSX.Element {
   const {t} = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const navigation = useNavigation();
   const clips = useAppStore(s => s.clips);
   const setClips = useAppStore(s => s.setClips);
   const removeClip = useAppStore(s => s.removeClip);
@@ -139,6 +143,13 @@ export default function ClipsScreen(): React.JSX.Element {
         <Text style={styles.emptyIllustration}>📹</Text>
         <Text style={styles.emptyTitle}>{t('clips.emptyTitle')}</Text>
         <Text style={styles.emptyBody}>{t('clips.emptyBody')}</Text>
+        <TouchableOpacity
+          style={styles.emptyCTA}
+          onPress={() => navigation.navigate('Home' as never)}
+          activeOpacity={0.85}
+          accessibilityLabel="Go to home to record">
+          <Text style={styles.emptyCTAText}>{t('clips.emptyAction')}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -168,13 +179,16 @@ export default function ClipsScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar
+        barStyle={theme.textPrimary === '#FFFFFF' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.background}
+      />
 
       <View style={styles.header}>
         {selectionMode ? (
           <>
             <TouchableOpacity onPress={exitSelectionMode} style={styles.headerBtn}>
-              <Text style={styles.headerBtnText}>✕ Cancel</Text>
+              <Text style={styles.headerBtnText}>✕ {t('clips.cancel')}</Text>
             </TouchableOpacity>
             <Text style={styles.selectionCount}>
               {selectedClips.size} selected
@@ -184,7 +198,7 @@ export default function ClipsScreen(): React.JSX.Element {
                 onPress={allSelected ? exitSelectionMode : selectAll}
                 style={styles.headerBtn}>
                 <Text style={styles.headerBtnText}>
-                  {allSelected ? 'None' : 'All'}
+                  {allSelected ? t('clips.none') : t('clips.all')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -192,7 +206,7 @@ export default function ClipsScreen(): React.JSX.Element {
                 style={[styles.headerBtn, selectedClips.size === 0 && styles.headerBtnDisabled]}
                 disabled={selectedClips.size === 0}>
                 <Text style={[styles.headerBtnText, styles.headerBtnDelete]}>
-                  Delete
+                  {t('clips.delete')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -201,7 +215,9 @@ export default function ClipsScreen(): React.JSX.Element {
           <>
             <Text style={styles.title}>{t('clips.title')}</Text>
             {clips.length > 0 && (
-              <Text style={styles.count}>{clips.length} / 20</Text>
+              <View style={styles.countBadge}>
+                <Text style={styles.countBadgeText}>{clips.length}/20</Text>
+              </View>
             )}
           </>
         )}
@@ -236,86 +252,110 @@ export default function ClipsScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: 26,
-    fontWeight: '800',
-  },
-  count: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  // Selection mode header
-  selectionCount: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  headerBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: spacing.sm,
-  },
-  headerBtnText: {
-    color: colors.accent,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  headerBtnDelete: {
-    color: '#E53935',
-  },
-  headerBtnDisabled: {
-    opacity: 0.4,
-  },
-  // Grid
-  grid: {
-    padding: spacing.sm,
-  },
-  columnWrapper: {
-    paddingHorizontal: spacing.xs,
-  },
-  emptyFlex: {
-    flex: 1,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-  },
-  emptyIllustration: {
-    fontSize: 64,
-    marginBottom: spacing.sm,
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  emptyBody: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});
+function createStyles(t: Theme) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: t.border,
+    },
+    title: {
+      color: t.textPrimary,
+      fontSize: 26,
+      fontWeight: '800',
+    },
+    countBadge: {
+      backgroundColor: t.accent,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+    },
+    countBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    // Selection mode header
+    selectionCount: {
+      color: t.textPrimary,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    headerActions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    headerBtn: {
+      paddingVertical: 6,
+      paddingHorizontal: spacing.sm,
+    },
+    headerBtnText: {
+      color: t.accent,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    headerBtnDelete: {
+      color: t.recordingRed,
+    },
+    headerBtnDisabled: {
+      opacity: 0.4,
+    },
+    // Grid
+    grid: {
+      padding: spacing.sm,
+    },
+    columnWrapper: {
+      paddingHorizontal: spacing.xs,
+    },
+    emptyFlex: {
+      flex: 1,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.xl,
+    },
+    emptyIllustration: {
+      fontSize: 64,
+      marginBottom: spacing.sm,
+    },
+    emptyTitle: {
+      color: t.textPrimary,
+      fontSize: 20,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    emptyBody: {
+      color: t.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    emptyCTA: {
+      marginTop: spacing.md,
+      backgroundColor: t.accent,
+      borderRadius: 12,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.sm,
+      minHeight: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyCTAText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+  });
+}

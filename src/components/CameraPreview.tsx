@@ -1,13 +1,16 @@
-import React, {forwardRef} from 'react';
+import React, {forwardRef, useMemo} from 'react';
 import {StyleSheet, View, Text} from 'react-native';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
-import {colors} from '../theme/colors';
+import {Theme} from '../theme/colors';
+import {useTheme} from '../hooks/useTheme';
 
 interface Props {
   isActive: boolean;
 }
 
 const CameraPreview = forwardRef<Camera, Props>(({isActive}, ref) => {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const device = useCameraDevice('back');
 
   if (!device) {
@@ -35,15 +38,17 @@ const CameraPreview = forwardRef<Camera, Props>(({isActive}, ref) => {
 CameraPreview.displayName = 'CameraPreview';
 export default CameraPreview;
 
-const styles = StyleSheet.create({
-  noCamera: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noCameraText: {
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-});
+function createStyles(t: Theme) {
+  return StyleSheet.create({
+    noCamera: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: '#000',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    noCameraText: {
+      color: t.textSecondary,
+      fontSize: 16,
+    },
+  });
+}
