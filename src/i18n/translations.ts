@@ -100,7 +100,7 @@ export const translations = {
       permTitle: 'Permissions required',
       permBody: 'DashViewCar needs the following permissions to work properly.',
       permCamera: 'Camera',
-      permCameraDesc: 'Records 60 seconds when triggered',
+      permCameraDesc: 'Records video when triggered (duration configurable in Settings)',
       permMic: 'Microphone',
       permMicDesc: "Listens for the 'Go Dash' wake word",
       permLocation: 'Location (Always)',
@@ -329,7 +329,7 @@ export const translations = {
       permBody:
         "DashViewCar a besoin des permissions suivantes pour fonctionner correctement.",
       permCamera: 'Caméra',
-      permCameraDesc: "Enregistre 60 secondes lorsque déclenché",
+      permCameraDesc: 'Enregistre une vidéo au déclenchement (durée configurable dans Paramètres)',
       permMic: 'Microphone',
       permMicDesc: 'Écoute le mot-clé "Go Dash"',
       permLocation: 'Localisation (toujours)',

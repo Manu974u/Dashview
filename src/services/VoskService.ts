@@ -24,7 +24,7 @@ class VoskServiceClass {
 
   async start(): Promise<void> {
     if (this.isActive) {
-      console.log('[VoskService] start() skipped — already active');
+      if (__DEV__) console.log('[VoskService] start() skipped — already active');
       return;
     }
     if (!DashSpeech) {
@@ -35,18 +35,18 @@ class VoskServiceClass {
     this.wakeWordFired = false;
     this.attachListeners();
     await DashSpeech.start();
-    console.log('[VoskService] DashSpeech started');
+    if (__DEV__) console.log('[VoskService] DashSpeech started');
   }
 
   async stop(): Promise<void> {
-    console.log('[VoskService] stop()');
+    if (__DEV__) console.log('[VoskService] stop()');
     this.isActive = false;
     this.wakeWordFired = false;
     this.detachListeners();
     try { await DashSpeech?.stop(); } catch {}
     try {
       await DashSpeech?.destroy();
-      console.log('[VoskService] DashSpeech destroyed');
+      if (__DEV__) console.log('[VoskService] DashSpeech destroyed');
     } catch {}
   }
 
@@ -67,12 +67,12 @@ class VoskServiceClass {
         (event: {results: string[]}) => {
           if (this.wakeWordFired) return;
           const results = event.results ?? [];
-          if (results[0]) console.log('[VoskService] JS_PARTIAL at ' + Date.now() + ': ' + results[0]);
+          if (__DEV__ && results[0]) console.log('[VoskService] JS_PARTIAL at ' + Date.now() + ': ' + results[0]);
           const matched = results.find(r => this.isDash(r));
           if (matched !== undefined) {
-            console.log('[VoskService] WAKE_MATCH at ' + Date.now() + ': ' + matched);
+            if (__DEV__) console.log('[VoskService] WAKE_MATCH at ' + Date.now() + ': ' + matched);
             this.wakeWordFired = true;
-            console.log('[VoskService] CALLBACK at ' + Date.now());
+            if (__DEV__) console.log('[VoskService] CALLBACK at ' + Date.now());
             this.onWakeWord?.();
           }
         },
@@ -82,13 +82,13 @@ class VoskServiceClass {
         'DashSpeech:results',
         (event: {results: string[]}) => {
           const results = event.results ?? [];
-          console.log('[VoskService] JS_RESULT at ' + Date.now() + ': ' + JSON.stringify(results));
+          if (__DEV__) console.log('[VoskService] JS_RESULT at ' + Date.now() + ': ' + JSON.stringify(results));
           if (!this.wakeWordFired) {
             const matched = results.find(r => this.isDash(r));
             if (matched !== undefined) {
-              console.log('[VoskService] WAKE_MATCH at ' + Date.now() + ': ' + matched);
+              if (__DEV__) console.log('[VoskService] WAKE_MATCH at ' + Date.now() + ': ' + matched);
               this.wakeWordFired = true;
-              console.log('[VoskService] CALLBACK at ' + Date.now());
+              if (__DEV__) console.log('[VoskService] CALLBACK at ' + Date.now());
               this.onWakeWord?.();
             }
           }

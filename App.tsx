@@ -11,7 +11,7 @@
  * TODO: OBD-II Bluetooth speed/RPM data overlay on video
  * TODO: iOS support (second phase)
  */
-import React from 'react';
+import React, {useEffect} from 'react';
 import {StatusBar, useColorScheme} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -22,6 +22,11 @@ import {colors} from './src/theme/colors';
 
 export default function App(): React.JSX.Element {
   const onboardingComplete = useAppStore(s => s.onboardingComplete);
+  const hydrate = useAppStore(s => s.hydrate);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>

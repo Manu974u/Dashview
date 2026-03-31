@@ -42,7 +42,7 @@ class RecordingServiceClass {
     // set by SpeedMonitorService right before onImpact fired. For voice triggers
     // it's the current GPS speed. Captured now before 60s of driving can overwrite it.
     const capturedSpeedKmh = useAppStore.getState().currentSpeedKmh;
-    console.log('[RecordingService] capturedSpeedKmh at trigger:', capturedSpeedKmh);
+    if (__DEV__) console.log('[RecordingService] capturedSpeedKmh at trigger:', capturedSpeedKmh);
 
     // Acquire WakeLock for recording duration + 5s buffer (released in saveClip finally block).
     const wakeLockTimeout = (RECORDING_DURATION_SECONDS + 5) * 1000;
@@ -67,7 +67,7 @@ class RecordingServiceClass {
         videoCodec: 'h264',      // most efficient on Android hardware encoders
         videoBitRate: 4_000_000, // 4 Mbps — good quality, reasonable file size
         onRecordingFinished: video => {
-          console.log('[RecordingService] onRecordingFinished — path:', video.path);
+          if (__DEV__) console.log('[RecordingService] onRecordingFinished — path:', video.path);
           this.saveClip(video.path, trigger, capturedSpeedKmh, RECORDING_DURATION_SECONDS).catch(e =>
             console.warn('[RecordingService] saveClip error:', e?.message ?? e),
           );
@@ -136,7 +136,7 @@ class RecordingServiceClass {
 
     const filename = buildClipFilename(trigger);
     const timestamp = new Date().toISOString();
-    console.log('[RecordingService] saving clip with speedKmh:', capturedSpeedKmh);
+    if (__DEV__) console.log('[RecordingService] saving clip with speedKmh:', capturedSpeedKmh);
 
     const gps = await getCurrentGps().catch(() => ({
       lat: 0,

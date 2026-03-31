@@ -1,7 +1,11 @@
 import {create} from 'zustand';
 import {NativeModules, Platform} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {SensitivityLevel} from '../utils/speedCalc';
 import {Language} from '../i18n/translations';
+
+const STORAGE_KEY_CLIP_DURATION = 'dashviewcar_clip_duration';
+const STORAGE_KEY_SENSITIVITY = 'dashviewcar_sensitivity';
 
 // Detect device locale at startup — used as the default language.
 // NativeModules.I18nManager.localeIdentifier returns e.g. "fr_FR", "en_US".
@@ -90,6 +94,7 @@ interface AppState {
   setLanguageAutoDetected: (v: boolean) => void;
   tapVersionLabel: () => void;
   clearAllClips: () => void;
+  hydrate: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -121,7 +126,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setLastClipSavedAt: v => set({lastClipSavedAt: v}),
   setVoskReady: v => set({voskReady: v}),
   setSpeedDetectionEnabled: v => set({speedDetectionEnabled: v}),
-  setSensitivity: s => set({sensitivity: s}),
+  setSensitivity: s => {
+    set({sensitivity: s});
+    AsyncStorage.setItem(STORAGE_KEY_SENSITIVITY, s).catch(() => {});
+  },
   setCurrentSpeed: kmh => set({currentSpeedKmh: kmh}),
   setGpsActive: v => set({gpsActive: v}),
   setCurrentGps: gps => set({currentGps: gps}),
@@ -133,7 +141,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setClips: clips => set({clips}),
   setVideoQuality: q => set({videoQuality: q}),
   setAutoDelete: v => set({autoDelete: v}),
-  setClipDuration: d => set({clipDuration: d}),
+  setClipDuration: d => {
+    set({clipDuration: d});
+    AsyncStorage.setItem(STORAGE_KEY_CLIP_DURATION, String(d)).catch(() => {});
+  },
   setOnboardingComplete: v => set({onboardingComplete: v}),
   setVoiceWarningShown: v => set({voiceWarningShown: v}),
   setLanguage: l => set({language: l, languageIsAutoDetected: false}),
@@ -147,4 +158,25 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   clearAllClips: () => set({clips: []}),
+  hydrate: async () => {
+    try {
+      const [duration, sensitivity] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEY_CLIP_DURATION),
+        AsyncStorage.getItem(STORAGE_KEY_SENSITIVITY),
+      ]);
+      const update: Partial<AppState> = {};
+      if (duration) {
+        const d = Number(duration) as ClipDuration;
+        if (([60, 120, 240, 480] as number[]).includes(d)) {
+          update.clipDuration = d;
+        }
+      }
+      if (sensitivity && (['low', 'medium', 'high'] as string[]).includes(sensitivity)) {
+        update.sensitivity = sensitivity as SensitivityLevel;
+      }
+      if (Object.keys(update).length > 0) {
+        set(update);
+      }
+    } catch {}
+  },
 }));

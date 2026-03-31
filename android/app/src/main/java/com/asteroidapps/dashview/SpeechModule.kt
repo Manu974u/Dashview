@@ -600,7 +600,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
         try {
             destroyRecognizer()
             val recognizer = Recognizer(voskModel, 16000.0f,
-                "[\"go\", \"go dash\", \"go das\", \"go dach\", \"godash\", \"gou\", \"gou dash\", \"[unk]\"]")
+                "[\"go\", \"go dash\", \"go das\", \"go dach\", \"go dasch\", \"godash\", \"gou\", \"gou dash\", \"[unk]\"]")
             speechService = SpeechService(recognizer, 16000.0f)
             speechService!!.startListening(object : VoskListener {
                 override fun onPartialResult(hypothesis: String) {

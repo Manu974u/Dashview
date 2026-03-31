@@ -166,7 +166,7 @@ export default function HomeScreen(): React.JSX.Element {
    * This fires both on initial mount AND when the app returns from background.
    */
   function handleCameraStarted() {
-    console.log('[HomeScreen] Camera onStarted');
+    if (__DEV__) console.log('[HomeScreen] Camera onStarted');
     cameraStarted.current = true;
     isCameraReadyForTest.current = true;
     setTimeout(() => {
@@ -187,7 +187,7 @@ export default function HomeScreen(): React.JSX.Element {
 
   /** onStopped — camera session ended (app backgrounded or deactivated). */
   function handleCameraStopped() {
-    console.log('[HomeScreen] Camera onStopped');
+    if (__DEV__) console.log('[HomeScreen] Camera onStopped');
     cameraStarted.current = false;
     isCameraReadyForTest.current = false;
   }
@@ -210,7 +210,7 @@ export default function HomeScreen(): React.JSX.Element {
    */
   function startRecordingIfNotStarted(trigger: 'voice' | 'impact') {
     if (recordingStarted.current) {
-      console.log('[HomeScreen] startRecordingIfNotStarted: already started, skipping');
+      if (__DEV__) console.log('[HomeScreen] startRecordingIfNotStarted: already started, skipping');
       return;
     }
     recordingStarted.current = true;
@@ -218,7 +218,7 @@ export default function HomeScreen(): React.JSX.Element {
   }
 
   function doStartRecording(trigger: 'voice' | 'impact') {
-    console.log('[HomeScreen] doStartRecording trigger=' + trigger);
+    if (__DEV__) console.log('[HomeScreen] doStartRecording trigger=' + trigger);
     // doStartRecording is always called after cameraStarted.current === true
     // (either directly from handleCameraStarted, or from the trigger effect when
     // the camera session is already live). No artificial delay needed here.
@@ -254,7 +254,7 @@ export default function HomeScreen(): React.JSX.Element {
     if (cameraStarted.current) {
       startRecordingIfNotStarted(recordingTrigger);
     } else {
-      console.log('[HomeScreen] camera not started yet — queuing trigger:', recordingTrigger);
+      if (__DEV__) console.log('[HomeScreen] camera not started yet — queuing trigger:', recordingTrigger);
       pendingTrigger.current = recordingTrigger;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -265,20 +265,20 @@ export default function HomeScreen(): React.JSX.Element {
   // AppNavigator has already switched to the Home tab before this fires.
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener('onVoiceTrigger', () => {
-      console.log('[DASHVIEWCAR_TRIGGER] STEP 6: onVoiceTrigger received in JS');
+      if (__DEV__) console.log('[DASHVIEWCAR_TRIGGER] STEP 6: onVoiceTrigger received in JS');
       const store = useAppStore.getState();
       // Explicit guards: never allow a second trigger while recording or saving.
       if (store.mode === 'recording' || store.mode === 'saving') {
-        console.log('[HomeScreen] onVoiceTrigger: mode=' + store.mode + ' — ignoring (busy)');
+        if (__DEV__) console.log('[HomeScreen] onVoiceTrigger: mode=' + store.mode + ' — ignoring (busy)');
         return;
       }
       if (store.mode !== 'listening') {
-        console.log('[HomeScreen] onVoiceTrigger: mode=' + store.mode + ' — ignoring');
+        if (__DEV__) console.log('[HomeScreen] onVoiceTrigger: mode=' + store.mode + ' — ignoring');
         return;
       }
       const now = Date.now();
       if (now - lastTriggerTimeMs.current < TRIGGER_COOLDOWN_MS) {
-        console.log('[HomeScreen] onVoiceTrigger: cooldown active — ignoring');
+        if (__DEV__) console.log('[HomeScreen] onVoiceTrigger: cooldown active — ignoring');
         return;
       }
       lastTriggerTimeMs.current = now;
@@ -300,7 +300,7 @@ export default function HomeScreen(): React.JSX.Element {
     if (AppState.currentState !== 'active') {
       // Background: bring app to foreground via Intent.
       // MainActivity.onNewIntent will emit DashView:triggerRecording.
-      console.log('[HomeScreen] Wake word in background — sending intent');
+      if (__DEV__) console.log('[HomeScreen] Wake word in background — sending intent');
       NativeModules.DashSpeech?.bringToForeground?.()?.catch?.((e: any) =>
         console.warn('[HomeScreen] bringToForeground error:', e?.message ?? e),
       );
@@ -493,7 +493,7 @@ export default function HomeScreen(): React.JSX.Element {
     try {
       const opened = await NativeModules.DashSpeech?.requestOverlayPermission?.();
       if (opened) {
-        console.log('[HomeScreen] SYSTEM_ALERT_WINDOW settings opened — user must grant');
+        if (__DEV__) console.log('[HomeScreen] SYSTEM_ALERT_WINDOW settings opened — user must grant');
       }
     } catch (e: any) {
       console.warn('[HomeScreen] overlay permission request error:', e);
@@ -631,7 +631,7 @@ export default function HomeScreen(): React.JSX.Element {
     // Gate: camera session must be live before calling startRecording().
     // If not ready yet, set pendingTest so handleCameraStarted() picks it up.
     if (!cameraRef.current || !isCameraReadyForTest.current) {
-      console.log('[HomeScreen] startTestRecording: camera not ready — queuing pendingTest');
+      if (__DEV__) console.log('[HomeScreen] startTestRecording: camera not ready — queuing pendingTest');
       pendingTest.current = true;
       return;
     }
@@ -659,7 +659,7 @@ export default function HomeScreen(): React.JSX.Element {
       cameraRef.current.startRecording({
         fileType: 'mp4',
         onRecordingFinished: video => {
-          console.log('[HomeScreen] test onRecordingFinished — path:', video.path);
+          if (__DEV__) console.log('[HomeScreen] test onRecordingFinished — path:', video.path);
           clearTestTimers();
           setTestPhase('saving');
           saveTestClip(video.path, filename);
@@ -688,7 +688,7 @@ export default function HomeScreen(): React.JSX.Element {
   }
 
   async function saveTestClip(tempPath: string, filename: string) {
-    console.log('[HomeScreen] saveTestClip — tempPath:', tempPath, 'filename:', filename);
+    if (__DEV__) console.log('[HomeScreen] saveTestClip — tempPath:', tempPath, 'filename:', filename);
     try {
       await ensureClipsDir();
       const clip = await saveClip(tempPath, filename, {
@@ -750,7 +750,7 @@ export default function HomeScreen(): React.JSX.Element {
           zoom={0}
           onStarted={handleCameraStarted}
           onStopped={handleCameraStopped}
-          onInitialized={() => console.log('[HomeScreen] Camera onInitialized')}
+          onInitialized={() => { if (__DEV__) console.log('[HomeScreen] Camera onInitialized'); }}
           onError={handleCameraError}
         />
       )}
