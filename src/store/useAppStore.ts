@@ -7,7 +7,6 @@ import {Language} from '../i18n/translations';
 const STORAGE_KEY_CLIP_DURATION = 'dashviewcar_clip_duration';
 const STORAGE_KEY_SENSITIVITY = 'dashviewcar_sensitivity';
 const STORAGE_KEY_THEME_MODE = 'dashviewcar_theme_mode';
-const STORAGE_KEY_CAMERA_MODE = 'dashviewcar_camera_mode';
 
 // Detect device locale at startup — used as the default language.
 // NativeModules.I18nManager.localeIdentifier returns e.g. "fr_FR", "en_US".
@@ -22,7 +21,6 @@ export type ThemeMode = 'auto' | 'light' | 'dark';
 export type AutoDeleteOption = 'never' | '7days' | '30days';
 export type AppMode = 'inactive' | 'listening' | 'recording' | 'saving';
 export type ClipDuration = 60 | 120 | 240 | 480;
-export type CameraMode = 'back' | 'front' | 'both';
 
 export interface ClipMetadata {
   id: string;
@@ -73,9 +71,6 @@ interface AppState {
   // Theme
   themeMode: ThemeMode;
 
-  // Camera mode
-  cameraMode: CameraMode;
-
   // Dev mode
   devMode: boolean;
   devModeVersionTaps: number;
@@ -103,7 +98,6 @@ interface AppState {
   setLanguage: (l: Language) => void;
   setLanguageAutoDetected: (v: boolean) => void;
   setThemeMode: (m: ThemeMode) => void;
-  setCameraMode: (m: CameraMode) => void;
   tapVersionLabel: () => void;
   clearAllClips: () => void;
   hydrate: () => Promise<void>;
@@ -130,7 +124,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   language: _defaultLanguage,
   languageIsAutoDetected: true,
   themeMode: 'auto',
-  cameraMode: 'back',
   devMode: false,
   devModeVersionTaps: 0,
 
@@ -167,10 +160,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({themeMode: m});
     AsyncStorage.setItem(STORAGE_KEY_THEME_MODE, m).catch(() => {});
   },
-  setCameraMode: m => {
-    set({cameraMode: m});
-    AsyncStorage.setItem(STORAGE_KEY_CAMERA_MODE, m).catch(() => {});
-  },
   tapVersionLabel: () => {
     const taps = get().devModeVersionTaps + 1;
     if (taps >= 5) {
@@ -182,11 +171,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearAllClips: () => set({clips: []}),
   hydrate: async () => {
     try {
-      const [duration, sensitivity, themeMode, cameraModeStored] = await Promise.all([
+      const [duration, sensitivity, themeMode] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY_CLIP_DURATION),
         AsyncStorage.getItem(STORAGE_KEY_SENSITIVITY),
         AsyncStorage.getItem(STORAGE_KEY_THEME_MODE),
-        AsyncStorage.getItem(STORAGE_KEY_CAMERA_MODE),
       ]);
       const update: Partial<AppState> = {};
       if (duration) {
@@ -200,9 +188,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (themeMode && (['auto', 'light', 'dark'] as string[]).includes(themeMode)) {
         update.themeMode = themeMode as ThemeMode;
-      }
-      if (cameraModeStored && (['back', 'front', 'both'] as string[]).includes(cameraModeStored)) {
-        update.cameraMode = cameraModeStored as CameraMode;
       }
       if (Object.keys(update).length > 0) {
         set(update);

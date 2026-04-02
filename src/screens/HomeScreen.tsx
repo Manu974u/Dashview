@@ -44,12 +44,9 @@ export default function HomeScreen(): React.JSX.Element {
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const cameraRef = useRef<Camera>(null);
-  const frontCameraRef = useRef<Camera>(null);
   const backCamera = useCameraDevice('back');
-  const frontCamera = useCameraDevice('front');
-  const cameraMode = useAppStore(s => s.cameraMode);
-  const frontCameraWarningShown = useRef(false);
   const testTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * cameraStarted — true only when react-native-vision-camera fires onStarted,
@@ -108,9 +105,7 @@ export default function HomeScreen(): React.JSX.Element {
   // When a trigger fires (mode → 'recording'), the camera mounts and pre-warms (~500ms),
   // then onStarted fires and pendingTrigger picks it up — same as before.
   const isActiveRecording = isRecording || isSaving;
-  const backCameraShouldMount = ((isActiveRecording && (cameraMode === 'back' || cameraMode === 'both')) || testPhase !== null) && !!backCamera;
-  const frontCameraShouldMount = isActiveRecording && !!frontCamera && (cameraMode === 'front' || cameraMode === 'both');
-  const cameraShouldMount = backCameraShouldMount || frontCameraShouldMount;
+  const cameraShouldMount = ((isListening || isActiveRecording) || testPhase !== null) && !!backCamera;
 
   // ── Recording border pulse (pulsing red border during recording) ─────────
   const recordingBorderPulse = useRef(new Animated.Value(0)).current;
@@ -179,12 +174,12 @@ export default function HomeScreen(): React.JSX.Element {
     if (__DEV__) console.log('[HomeScreen] Camera onStarted');
     cameraStarted.current = true;
     isCameraReadyForTest.current = true;
-    setTimeout(() => {
+    focusTimerRef.current = setTimeout(() => {
+      focusTimerRef.current = null;
       cameraRef.current?.focus({ x: 0.5, y: 0.25 }).catch(() => {});
     }, 1000);
     // Fire any pending voice/impact trigger that arrived before camera was ready.
-    const _activeRef = useAppStore.getState().cameraMode === 'front' ? frontCameraRef.current : cameraRef.current;
-    if (pendingTrigger.current && useAppStore.getState().mode === 'recording' && _activeRef) {
+    if (pendingTrigger.current && useAppStore.getState().mode === 'recording' && cameraRef.current) {
       const trigger = pendingTrigger.current;
       pendingTrigger.current = null;
       startRecordingIfNotStarted(trigger);
@@ -234,7 +229,6 @@ export default function HomeScreen(): React.JSX.Element {
     // (either directly from handleCameraStarted, or from the trigger effect when
     // the camera session is already live). No artificial delay needed here.
     RecordingService.setCameraRef(cameraRef.current);
-    RecordingService.setFrontCameraRef(frontCameraRef.current);
     RecordingService.triggerRecording(trigger).catch((e: any) => {
       console.error('[HomeScreen] triggerRecording error:', e?.message ?? e);
       // Reset so user can retry (e.g. tap voice toggle again).
@@ -453,26 +447,18 @@ export default function HomeScreen(): React.JSX.Element {
     return () => sub.remove();
   }, []);
 
-  // ── Keep camera refs in sync ──────────────────────────────────────────────
+  // ── Keep camera ref in sync ───────────────────────────────────────────────
   useEffect(() => {
     RecordingService.setCameraRef(cameraRef.current);
-    RecordingService.setFrontCameraRef(frontCameraRef.current);
   });
-
-  // ── Front camera availability warning (one-time toast) ────────────────────
-  useEffect(() => {
-    if ((cameraMode === 'front' || cameraMode === 'both') && !frontCamera && !frontCameraWarningShown.current) {
-      frontCameraWarningShown.current = true;
-      if (Platform.OS === 'android') {
-        ToastAndroid.show('Front camera unavailable on this device', ToastAndroid.LONG);
-      }
-    }
-  }, [cameraMode, frontCamera]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       clearTestTimers();
+      if (focusTimerRef.current !== null) {
+        clearTimeout(focusTimerRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -751,7 +737,7 @@ export default function HomeScreen(): React.JSX.Element {
           Invisible (1×1) in main view so it pre-warms for instant recording.
           Style changes to full-screen during recording / test — no remount.
           onStarted is the authoritative signal that startRecording() is safe. */}
-      {backCameraShouldMount && (
+      {cameraShouldMount && (
         <Camera
           ref={cameraRef}
           style={isRecording || testPhase !== null ? StyleSheet.absoluteFill : styles.cameraHidden}
@@ -764,28 +750,6 @@ export default function HomeScreen(): React.JSX.Element {
           onStarted={handleCameraStarted}
           onStopped={handleCameraStopped}
           onInitialized={() => { if (__DEV__) console.log('[HomeScreen] Camera onInitialized'); }}
-          onError={handleCameraError}
-        />
-      )}
-      {frontCameraShouldMount && (
-        <Camera
-          ref={frontCameraRef}
-          style={
-            cameraMode === 'front' && isRecording
-              ? StyleSheet.absoluteFill
-              : cameraMode === 'both' && isRecording
-              ? styles.cameraPiP
-              : styles.cameraHidden
-          }
-          device={frontCamera!}
-          isActive
-          video
-          audio={false}
-          videoStabilizationMode="off"
-          zoom={0}
-          onStarted={cameraMode === 'front' ? handleCameraStarted : undefined}
-          onStopped={cameraMode === 'front' ? handleCameraStopped : undefined}
-          onInitialized={() => { if (__DEV__) console.log('[HomeScreen] Front camera onInitialized'); }}
           onError={handleCameraError}
         />
       )}
@@ -1102,18 +1066,6 @@ function createStyles(t: Theme) {
       height: 1,
       opacity: 0,
     },
-    // PiP front camera — top-right corner during dual recording
-    cameraPiP: {
-      position: 'absolute',
-      top: 16,
-      right: 16,
-      width: 120,
-      height: 90,
-      borderRadius: 8,
-      zIndex: 10,
-      overflow: 'hidden',
-    },
-
     // ── Recording screen ──────────────────────────────────────────────────────
     recordingBorder: {
       borderWidth: 4,

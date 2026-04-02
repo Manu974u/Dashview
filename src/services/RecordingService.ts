@@ -6,15 +6,12 @@ import {Platform, ToastAndroid, Alert, NativeModules} from 'react-native';
 import {Camera} from 'react-native-vision-camera';
 import {useAppStore} from '../store/useAppStore';
 import {getCurrentGps} from './LocationService';
-import {buildClipFilename, getFilenameTimestamp} from '../utils/datetime';
+import {buildClipFilename} from '../utils/datetime';
 import {saveClip, ensureClipsDir, enforceClipLimit} from './ClipStorageService';
 
 class RecordingServiceClass {
   private cameraRef: Camera | null = null;
-  private frontCameraRef: Camera | null = null;
   private isRecording = false;
-  private activeCameraMode: 'back' | 'front' | 'both' = 'back';
-  private pendingSaves = 0;
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
   private customSaveMessage: string | null = null;
 
@@ -27,24 +24,16 @@ class RecordingServiceClass {
     this.cameraRef = ref;
   }
 
-  setFrontCameraRef(ref: Camera | null): void {
-    this.frontCameraRef = ref;
-  }
-
   async triggerRecording(trigger: 'voice' | 'impact'): Promise<void> {
     if (this.isRecording) {
       return;
     }
-    const cameraMode = useAppStore.getState().cameraMode;
-    this.activeCameraMode = cameraMode;
-    const primaryCamera = cameraMode === 'front' ? this.frontCameraRef : this.cameraRef;
-    if (!primaryCamera) {
+    if (!this.cameraRef) {
       throw new Error('Camera not ready — camera must be mounted before recording.');
     }
     const RECORDING_DURATION_SECONDS = useAppStore.getState().clipDuration;
 
     this.isRecording = true;
-    this.pendingSaves = cameraMode === 'both' ? 2 : 1;
     const store = useAppStore.getState();
     store.setMode('recording');
     store.setRecordingTrigger(trigger);
@@ -72,48 +61,31 @@ class RecordingServiceClass {
       }
     }, 1_000);
 
-    const makeOptions = (suffix?: '_back' | '_front') => ({
-      fileType: 'mp4' as const,
-      videoCodec: 'h264' as const,
-      videoBitRate: 4_000_000,
-      onRecordingFinished: (video: {path: string}) => {
-        if (__DEV__) console.log('[RecordingService] onRecordingFinished path:', video.path, 'suffix:', suffix);
-        this.saveClip(video.path, trigger, capturedSpeedKmh, RECORDING_DURATION_SECONDS, suffix).catch(e =>
-          console.warn('[RecordingService] saveClip error:', e?.message ?? e),
-        );
-      },
-      onRecordingError: (err: any) => {
-        console.warn('[RecordingService] onRecordingError:', err);
-        this.clearTimers();
-        this.isRecording = false;
-        this.pendingSaves = 0;
-        const s = useAppStore.getState();
-        s.setMode('listening');
-        s.setRecordingTrigger(null);
-        s.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
-        Alert.alert('Recording Error', `Camera recording failed: ${err?.message ?? err}`);
-      },
-    });
-
     try {
-      if (cameraMode === 'back') {
-        this.cameraRef!.startRecording(makeOptions());
-      } else if (cameraMode === 'front') {
-        this.frontCameraRef!.startRecording(makeOptions());
-      } else {
-        // both — back is primary; front is best-effort
-        this.cameraRef!.startRecording(makeOptions('_back'));
-        try {
-          this.frontCameraRef?.startRecording(makeOptions('_front'));
-        } catch (frontErr: any) {
-          console.warn('[RecordingService] front camera failed, continuing with back only:', frontErr?.message ?? frontErr);
-          this.pendingSaves = 1;
-        }
-      }
+      this.cameraRef.startRecording({
+        fileType: 'mp4' as const,
+        videoCodec: 'h264' as const,
+        videoBitRate: 4_000_000,
+        onRecordingFinished: (video: {path: string}) => {
+          if (__DEV__) console.log('[RecordingService] onRecordingFinished path:', video.path);
+          this.saveClip(video.path, trigger, capturedSpeedKmh, RECORDING_DURATION_SECONDS).catch(e =>
+            console.warn('[RecordingService] saveClip error:', e?.message ?? e),
+          );
+        },
+        onRecordingError: (err: any) => {
+          console.warn('[RecordingService] onRecordingError:', err);
+          this.clearTimers();
+          this.isRecording = false;
+          const s = useAppStore.getState();
+          s.setMode('listening');
+          s.setRecordingTrigger(null);
+          s.setRecordingSecondsLeft(RECORDING_DURATION_SECONDS);
+          Alert.alert('Recording Error', `Camera recording failed: ${err?.message ?? err}`);
+        },
+      });
     } catch (e: any) {
       this.clearTimers();
       this.isRecording = false;
-      this.pendingSaves = 0;
       const s = useAppStore.getState();
       s.setMode('listening');
       s.setRecordingTrigger(null);
@@ -128,13 +100,7 @@ class RecordingServiceClass {
     }
     this.clearTimers();
     try {
-      if (this.activeCameraMode === 'front') {
-        await this.frontCameraRef?.stopRecording();
-      } else if (this.activeCameraMode === 'both') {
-        await Promise.allSettled([this.cameraRef?.stopRecording(), this.frontCameraRef?.stopRecording()]);
-      } else {
-        await this.cameraRef?.stopRecording();
-      }
+      await this.cameraRef?.stopRecording();
     } catch (e: any) {
       console.warn('[RecordingService] stopEarly error:', e?.message ?? e);
     }
@@ -143,13 +109,7 @@ class RecordingServiceClass {
   private async stopAndSave(): Promise<void> {
     this.clearTimers();
     try {
-      if (this.activeCameraMode === 'front') {
-        await this.frontCameraRef?.stopRecording();
-      } else if (this.activeCameraMode === 'both') {
-        await Promise.allSettled([this.cameraRef?.stopRecording(), this.frontCameraRef?.stopRecording()]);
-      } else {
-        await this.cameraRef?.stopRecording();
-      }
+      await this.cameraRef?.stopRecording();
     } catch {
       // stopRecording resolves via onRecordingFinished regardless
     }
@@ -167,7 +127,6 @@ class RecordingServiceClass {
     trigger: 'voice' | 'impact',
     capturedSpeedKmh: number,
     recordingDuration: number,
-    cameraSuffix?: '_back' | '_front',
   ): Promise<void> {
     this.isRecording = false;
     this.clearTimers();
@@ -175,9 +134,7 @@ class RecordingServiceClass {
     const store = useAppStore.getState();
     store.setMode('saving');
 
-    const filename = cameraSuffix
-      ? `DashViewCar_${getFilenameTimestamp()}_${trigger}${cameraSuffix}.mp4`
-      : buildClipFilename(trigger);
+    const filename = buildClipFilename(trigger);
     const timestamp = new Date().toISOString();
     if (__DEV__) console.log('[RecordingService] saving clip with speedKmh:', capturedSpeedKmh);
 
@@ -220,17 +177,14 @@ class RecordingServiceClass {
         `Could not save clip: ${e?.message ?? 'Unknown error'}`,
       );
     } finally {
-      this.pendingSaves = Math.max(0, this.pendingSaves - 1);
-      if (this.pendingSaves <= 0) {
-        // Release WakeLock — CPU no longer needs to stay awake after both clips are saved.
-        NativeModules.DashSpeech?.releaseWakeLock?.()?.catch?.((e: any) =>
-          console.warn('[RecordingService] releaseWakeLock failed:', e?.message ?? e),
-        );
-        const s = useAppStore.getState();
-        s.setMode('listening');
-        s.setRecordingTrigger(null);
-        s.setRecordingSecondsLeft(recordingDuration);
-      }
+      // Release WakeLock — CPU no longer needs to stay awake after clip is saved.
+      NativeModules.DashSpeech?.releaseWakeLock?.()?.catch?.((e: any) =>
+        console.warn('[RecordingService] releaseWakeLock failed:', e?.message ?? e),
+      );
+      const s = useAppStore.getState();
+      s.setMode('listening');
+      s.setRecordingTrigger(null);
+      s.setRecordingSecondsLeft(recordingDuration);
     }
   }
 }

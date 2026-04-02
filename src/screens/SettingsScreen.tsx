@@ -12,7 +12,7 @@ import {
   ToastAndroid,
   Platform,
 } from 'react-native';
-import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, ThemeMode, CameraMode} from '../store/useAppStore';
+import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, ThemeMode} from '../store/useAppStore';
 import {SensitivityLevel} from '../utils/speedCalc';
 import {deleteClip, loadClips} from '../services/ClipStorageService';
 import {SpeedMonitorService} from '../services/SpeedMonitorService';
@@ -46,8 +46,6 @@ export default function SettingsScreen(): React.JSX.Element {
   const languageIsAutoDetected = useAppStore(s => s.languageIsAutoDetected);
   const themeMode = useAppStore(s => s.themeMode);
   const setThemeMode = useAppStore(s => s.setThemeMode);
-  const cameraMode = useAppStore(s => s.cameraMode);
-  const setCameraMode = useAppStore(s => s.setCameraMode);
 
   async function handleClearAllClips() {
     Alert.alert(t('settings.clearAllTitle'), t('settings.clearAllBody'), [
@@ -278,37 +276,6 @@ export default function SettingsScreen(): React.JSX.Element {
                 styles={styles}
               />
             </View>
-          </View>
-        </View>
-
-        {/* Camera */}
-        <SectionHeader title={t('settings.cameraTitle')} />
-        <View style={styles.card}>
-          <View>
-            <Text style={styles.rowLabel}>{t('settings.cameraTitle')}</Text>
-            <Text style={styles.rowDesc}>{t('settings.cameraDesc')}</Text>
-            <View style={{marginTop: spacing.sm}}>
-              <SegmentedControl<CameraMode>
-                options={[
-                  {value: 'back',  label: '🚗 ' + t('settings.cameraBack'),  desc: t('settings.cameraBackNote')},
-                  {value: 'front', label: '👤 ' + t('settings.cameraFront'), desc: t('settings.cameraFrontNote')},
-                  {value: 'both',  label: '📷 ' + t('settings.cameraBoth'),  desc: t('settings.cameraBothWarning')},
-                ]}
-                selected={cameraMode}
-                onSelect={setCameraMode}
-                theme={theme}
-                styles={styles}
-              />
-            </View>
-            {cameraMode === 'both' ? (
-              <Text style={[styles.rowNote, {color: theme.warning, fontStyle: 'normal', marginTop: spacing.xs}]}>
-                {t('settings.cameraBothWarning')}
-              </Text>
-            ) : (
-              <Text style={[styles.rowNote, {marginTop: spacing.xs}]}>
-                {cameraMode === 'front' ? t('settings.cameraFrontNote') : t('settings.cameraBackNote')}
-              </Text>
-            )}
           </View>
         </View>
 
