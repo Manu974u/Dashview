@@ -13,8 +13,10 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.app.KeyguardManager
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.WindowManager
 import android.speech.SpeechRecognizer
 import android.util.Log
 import org.vosk.Model
@@ -76,6 +78,9 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
     // ── WakeLock (held only during active recording, ~65s max) ────────────────
     private var wakeLock: PowerManager.WakeLock? = null
 
+    // ── Recognition WakeLock (keeps CPU alive during Vosk listening, screen off) ──
+    private var recognitionWakeLock: PowerManager.WakeLock? = null
+
     override fun getName(): String = "DashSpeech"
 
     @ReactMethod fun addListener(eventName: String) {}
@@ -116,6 +121,10 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
             Log.d(TAG, "stop called")
             isRunning = false
             recognitionHandler.removeCallbacksAndMessages(null)
+            if (recognitionWakeLock?.isHeld == true) {
+                recognitionWakeLock?.release()
+            }
+            recognitionWakeLock = null
             destroyRecognizer()
             promise.resolve(null)
         }
@@ -127,6 +136,10 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
             Log.d(TAG, "destroy called")
             isRunning = false
             recognitionHandler.removeCallbacksAndMessages(null)
+            if (recognitionWakeLock?.isHeld == true) {
+                recognitionWakeLock?.release()
+            }
+            recognitionWakeLock = null
             destroyRecognizer()
             promise.resolve(null)
         }
@@ -364,6 +377,37 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
 
             if (canDrawOverlays) {
                 Log.d(TRIGGER_TAG, "STEP 2a: SYSTEM_ALERT_WINDOW granted — calling startActivity()")
+                // Wake screen
+                val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+                val screenWakeLock = pm.newWakeLock(
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                    PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                    PowerManager.ON_AFTER_RELEASE,
+                    "DashViewCar::ScreenWakeLock"
+                )
+                screenWakeLock.acquire(10_000L)
+                // Dismiss keyguard
+                val keyguardManager = reactContext.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    currentActivity?.let { activity ->
+                        keyguardManager.requestDismissKeyguard(activity, object : KeyguardManager.KeyguardDismissCallback() {
+                            override fun onDismissSucceeded() {
+                                Log.d(TRIGGER_TAG, "Keyguard dismissed successfully")
+                                screenWakeLock.release()
+                            }
+                            override fun onDismissCancelled() {
+                                Log.d(TRIGGER_TAG, "Keyguard dismiss cancelled")
+                                screenWakeLock.release()
+                            }
+                            override fun onDismissError() {
+                                Log.d(TRIGGER_TAG, "Keyguard dismiss error")
+                                screenWakeLock.release()
+                            }
+                        })
+                    } ?: screenWakeLock.release()
+                } else {
+                    screenWakeLock.release()
+                }
                 reactContext.startActivity(launchIntent)
             } else {
                 Log.d(TRIGGER_TAG, "STEP 2b: SYSTEM_ALERT_WINDOW NOT granted — skipping startActivity()")
@@ -602,6 +646,16 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
             val recognizer = Recognizer(voskModel, 16000.0f,
                 "[\"go\", \"go dash\", \"go das\", \"go dach\", \"go dasch\", \"godash\", \"gou\", \"gou dash\", \"[unk]\"]")
             speechService = SpeechService(recognizer, 16000.0f)
+            val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (recognitionWakeLock == null) {
+                recognitionWakeLock = pm.newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "DashViewCar::VoiceRecognitionLock"
+                )
+            }
+            if (recognitionWakeLock?.isHeld == false) {
+                recognitionWakeLock?.acquire()
+            }
             speechService!!.startListening(object : VoskListener {
                 override fun onPartialResult(hypothesis: String) {
                     if (!isRunning) return
@@ -688,6 +742,10 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
         recognitionHandler.removeCallbacksAndMessages(null)
         recognitionHandler.post {
             destroyRecognizer()
+            if (recognitionWakeLock?.isHeld == true) {
+                recognitionWakeLock?.release()
+            }
+            recognitionWakeLock = null
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
                 wakeLock = null

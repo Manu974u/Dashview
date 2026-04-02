@@ -23,6 +23,7 @@
 
     <!-- ─── Wake lock (keep CPU active during background listening) ─── -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
     <!-- ─── Notifications (Android 13+ / API 33+) ────────────────────── -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
