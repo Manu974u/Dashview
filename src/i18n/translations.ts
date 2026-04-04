@@ -177,6 +177,12 @@ export const translations = {
       clipDurationBatteryNote120: 'Moderate battery usage',
       clipDurationBatteryNote240: 'High battery usage',
       clipDurationBatteryNote480: 'Very high battery usage — charge recommended',
+      cameraTitle: 'Camera',
+      cameraDesc: 'Choose which camera to record with',
+      cameraBack: '🚗 Road',
+      cameraFront: '👤 Interior',
+      cameraBackNote: 'Films the road ahead',
+      cameraFrontNote: 'Films driver and passengers',
       quality: 'Quality',
       quality720: '720p',
       quality720Desc: 'Smaller files',
@@ -208,7 +214,7 @@ export const translations = {
 
       sectionAbout: 'About',
       appVersion: 'App Version',
-      appVersionValue: 'DashViewCar v1.0.3',
+      appVersionValue: 'DashViewCar v1.0.4',
 
       sectionDev: 'Developer',
       devReloadClips: '🔄  Reload clips from disk',
@@ -422,6 +428,12 @@ export const translations = {
       clipDurationBatteryNote120: 'Consommation batterie modérée',
       clipDurationBatteryNote240: 'Consommation batterie élevée',
       clipDurationBatteryNote480: 'Consommation très élevée — charge recommandée',
+      cameraTitle: 'Caméra',
+      cameraDesc: 'Choisissez quelle caméra utiliser',
+      cameraBack: '🚗 Route',
+      cameraFront: '👤 Habitacle',
+      cameraBackNote: 'Filme la route devant vous',
+      cameraFrontNote: 'Filme le conducteur et les passagers',
       quality: 'Qualité',
       quality720: '720p',
       quality720Desc: 'Fichiers plus légers',
@@ -455,7 +467,7 @@ export const translations = {
 
       sectionAbout: 'À propos',
       appVersion: 'Version',
-      appVersionValue: 'DashViewCar v1.0.3',
+      appVersionValue: 'DashViewCar v1.0.4',
 
       sectionDev: 'Développeur',
       devReloadClips: '🔄  Recharger les clips depuis le disque',

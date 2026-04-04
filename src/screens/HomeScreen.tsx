@@ -45,6 +45,9 @@ export default function HomeScreen(): React.JSX.Element {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const cameraRef = useRef<Camera>(null);
   const backCamera = useCameraDevice('back');
+  const frontCamera = useCameraDevice('front');
+  const cameraMode = useAppStore(s => s.cameraMode);
+  const activeCamera = cameraMode === 'front' ? frontCamera : backCamera;
   const testTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -105,7 +108,7 @@ export default function HomeScreen(): React.JSX.Element {
   // When a trigger fires (mode → 'recording'), the camera mounts and pre-warms (~500ms),
   // then onStarted fires and pendingTrigger picks it up — same as before.
   const isActiveRecording = isRecording || isSaving;
-  const cameraShouldMount = ((isListening || isActiveRecording) || testPhase !== null) && !!backCamera;
+  const cameraShouldMount = ((isListening || isActiveRecording) || testPhase !== null) && !!activeCamera;
 
   // ── Recording border pulse (pulsing red border during recording) ─────────
   const recordingBorderPulse = useRef(new Animated.Value(0)).current;
@@ -619,7 +622,7 @@ export default function HomeScreen(): React.JSX.Element {
   }
 
   function handleRunTest() {
-    if (!backCamera) {
+    if (!activeCamera) {
       Alert.alert(t('home.noCameraTitle'), t('home.noCameraDesc'));
       return;
     }
@@ -741,7 +744,7 @@ export default function HomeScreen(): React.JSX.Element {
         <Camera
           ref={cameraRef}
           style={isRecording || testPhase !== null ? StyleSheet.absoluteFill : styles.cameraHidden}
-          device={backCamera!}
+          device={activeCamera!}
           isActive
           video
           audio={false}
