@@ -39,7 +39,7 @@ export const darkTheme = {
   recordingRed: '#FF1744',
   success: '#00E676',
   textPrimary: '#FFFFFF',
-  textSecondary: '#8899AA',
+  textSecondary: '#8A9BB0',
   border: 'rgba(0, 212, 255, 0.15)',
   navBackground: '#0F1923',
   navBorder: 'rgba(0,212,255,0.1)',
