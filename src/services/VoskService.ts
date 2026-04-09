@@ -17,6 +17,7 @@ class VoskServiceClass {
   private isActive = false;
   private subs: {remove: () => void}[] = [];
   private wakeWordFired = false;
+  private stopWordFired = false;
 
   setWakeWordCallback(cb: () => void): void {
     this.onWakeWord = cb;
@@ -33,6 +34,7 @@ class VoskServiceClass {
     }
     this.isActive = true;
     this.wakeWordFired = false;
+    this.stopWordFired = false;
     this.attachListeners();
     await DashSpeech.start();
     if (__DEV__) console.log('[VoskService] DashSpeech started');
@@ -42,6 +44,7 @@ class VoskServiceClass {
     if (__DEV__) console.log('[VoskService] stop()');
     this.isActive = false;
     this.wakeWordFired = false;
+    this.stopWordFired = false;
     this.detachListeners();
     try { await DashSpeech?.stop(); } catch {}
     try {
@@ -60,20 +63,30 @@ class VoskServiceClass {
     this.subs = [
       DeviceEventEmitter.addListener('DashSpeech:ready', () => {
         this.wakeWordFired = false;
+        this.stopWordFired = false;
       }),
 
       DeviceEventEmitter.addListener(
         'DashSpeech:partial',
         (event: {results: string[]}) => {
-          if (this.wakeWordFired) return;
           const results = event.results ?? [];
           if (__DEV__ && results[0]) console.log('[VoskService] JS_PARTIAL at ' + Date.now() + ': ' + results[0]);
-          const matched = results.find(r => this.isDash(r));
-          if (matched !== undefined) {
-            if (__DEV__) console.log('[VoskService] WAKE_MATCH at ' + Date.now() + ': ' + matched);
-            this.wakeWordFired = true;
-            if (__DEV__) console.log('[VoskService] CALLBACK at ' + Date.now());
-            this.onWakeWord?.();
+          if (!this.wakeWordFired) {
+            const matched = results.find(r => this.isDash(r));
+            if (matched !== undefined) {
+              if (__DEV__) console.log('[VoskService] WAKE_MATCH at ' + Date.now() + ': ' + matched);
+              this.wakeWordFired = true;
+              if (__DEV__) console.log('[VoskService] CALLBACK at ' + Date.now());
+              this.onWakeWord?.();
+            }
+          }
+          if (!this.stopWordFired && useAppStore.getState().mode === 'recording') {
+            const stopMatched = results.find(r => this.isStop(r));
+            if (stopMatched !== undefined) {
+              if (__DEV__) console.log('[VoskService] STOP_MATCH at ' + Date.now() + ': ' + stopMatched);
+              this.stopWordFired = true;
+              DeviceEventEmitter.emit('StopDash');
+            }
           }
         },
       ),
@@ -90,6 +103,14 @@ class VoskServiceClass {
               this.wakeWordFired = true;
               if (__DEV__) console.log('[VoskService] CALLBACK at ' + Date.now());
               this.onWakeWord?.();
+            }
+          }
+          if (!this.stopWordFired && useAppStore.getState().mode === 'recording') {
+            const stopMatched = results.find(r => this.isStop(r));
+            if (stopMatched !== undefined) {
+              if (__DEV__) console.log('[VoskService] STOP_MATCH at ' + Date.now() + ': ' + stopMatched);
+              this.stopWordFired = true;
+              DeviceEventEmitter.emit('StopDash');
             }
           }
         },
@@ -130,6 +151,18 @@ class VoskServiceClass {
       n.includes('go cache') ||
       n.includes('gou dash') ||
       n.includes('go tache')
+    );
+  }
+
+  private isStop(text: string): boolean {
+    const n = text.toLowerCase().trim();
+    return (
+      n.includes('stop dash')  ||
+      n.includes('stop das')   ||
+      n.includes('stop dach')  ||
+      n.includes('stopdash')   ||
+      n.includes('stop cache') ||
+      n.includes('stop stash')
     );
   }
 

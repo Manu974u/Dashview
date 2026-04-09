@@ -644,7 +644,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
         try {
             destroyRecognizer()
             val recognizer = Recognizer(voskModel, 16000.0f,
-                "[\"go\", \"go dash\", \"go das\", \"go dach\", \"go dasch\", \"godash\", \"gou\", \"gou dash\", \"[unk]\"]")
+                "[\"go\", \"go dash\", \"go das\", \"go dach\", \"go dasch\", \"godash\", \"gou\", \"gou dash\", \"stop\", \"stop dash\", \"stop das\", \"stop dach\", \"stopdash\", \"[unk]\"]")
             speechService = SpeechService(recognizer, 16000.0f)
             val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
             if (recognitionWakeLock == null) {

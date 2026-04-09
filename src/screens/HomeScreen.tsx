@@ -301,6 +301,19 @@ export default function HomeScreen(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Stop Dash voice command ───────────────────────────────────────────────
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('StopDash', () => {
+      if (__DEV__) console.log('[HomeScreen] StopDash received');
+      if (useAppStore.getState().mode === 'recording') {
+        RecordingService.stopEarly().catch((e: any) =>
+          console.warn('[HomeScreen] StopDash stopEarly error:', e),
+        );
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   // ── Wake word handler ─────────────────────────────────────────────────────
   const handleWakeWord = useCallback(() => {
     const store = useAppStore.getState();
