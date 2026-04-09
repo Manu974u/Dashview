@@ -214,7 +214,7 @@ export const translations = {
 
       sectionAbout: 'About',
       appVersion: 'App Version',
-      appVersionValue: 'DashViewCar v1.0.4',
+      appVersionValue: 'DashViewCar v1.0.5',
 
       sectionDev: 'Developer',
       devReloadClips: '🔄  Reload clips from disk',
@@ -467,7 +467,7 @@ export const translations = {
 
       sectionAbout: 'À propos',
       appVersion: 'Version',
-      appVersionValue: 'DashViewCar v1.0.4',
+      appVersionValue: 'DashViewCar v1.0.5',
 
       sectionDev: 'Développeur',
       devReloadClips: '🔄  Recharger les clips depuis le disque',
