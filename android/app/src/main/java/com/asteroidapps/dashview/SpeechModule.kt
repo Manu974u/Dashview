@@ -665,6 +665,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
                     arr.pushString(hypothesis)
                     map.putArray("results", arr)
                     emit("DashSpeech:partial", map)
+                    if (isStopHypothesis(hypothesis)) acquireStopWakeLockAndEmit()
                 }
                 override fun onResult(hypothesis: String) {
                     if (!isRunning) return
@@ -674,6 +675,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
                     arr.pushString(hypothesis)
                     map.putArray("results", arr)
                     emit("DashSpeech:results", map)
+                    if (isStopHypothesis(hypothesis)) acquireStopWakeLockAndEmit()
                     if (isRunning) {
                         recognitionHandler.postDelayed({ startListening() }, 100)
                     }
@@ -722,6 +724,33 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
         try { speechService?.stop() } catch (_: Exception) {}
         try { speechService?.shutdown() } catch (_: Exception) {}
         speechService = null
+    }
+
+    // ── Stop Dash detection ───────────────────────────────────────────────────
+
+    private fun isStopHypothesis(text: String): Boolean {
+        val n = text.lowercase()
+        return n.contains("stop dash") || n.contains("stop das") ||
+               n.contains("stop dach") || n.contains("stopdash") ||
+               n.contains("stop cache") || n.contains("stop stash")
+    }
+
+    /**
+     * Acquires a PARTIAL_WAKE_LOCK (CPU only, no screen) for 3s, then emits StopDash to JS.
+     * When the screen is locked, the JS bridge may be throttled — the wake lock ensures the
+     * event is processed before the CPU can sleep again.
+     */
+    private fun acquireStopWakeLockAndEmit() {
+        try {
+            val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+            val wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "DashViewCar::StopDashLock")
+            wl.acquire(3_000L)
+            emit("StopDash", null)
+            Log.d(TAG, "StopDash emitted (wake lock 3s)")
+        } catch (e: Exception) {
+            Log.w(TAG, "StopDash wake lock failed: ${e.message}")
+            emit("StopDash", null)
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
