@@ -8,6 +8,7 @@ const STORAGE_KEY_CLIP_DURATION = 'dashviewcar_clip_duration';
 const STORAGE_KEY_SENSITIVITY = 'dashviewcar_sensitivity';
 const STORAGE_KEY_THEME_MODE = 'dashviewcar_theme_mode';
 const STORAGE_KEY_CAMERA_MODE = 'dashviewcar_camera_mode';
+const STORAGE_KEY_ONBOARDING = 'dashviewcar_onboarding_completed';
 
 // Detect device locale at startup — used as the default language.
 // NativeModules.I18nManager.localeIdentifier returns e.g. "fr_FR", "en_US".
@@ -159,7 +160,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({clipDuration: d});
     AsyncStorage.setItem(STORAGE_KEY_CLIP_DURATION, String(d)).catch(() => {});
   },
-  setOnboardingComplete: v => set({onboardingComplete: v}),
+  setOnboardingComplete: v => {
+    set({onboardingComplete: v});
+    AsyncStorage.setItem(STORAGE_KEY_ONBOARDING, v ? '1' : '0').catch(() => {});
+  },
   setVoiceWarningShown: v => set({voiceWarningShown: v}),
   setLanguage: l => set({language: l, languageIsAutoDetected: false}),
   setLanguageAutoDetected: v => set({languageIsAutoDetected: v}),
@@ -182,11 +186,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearAllClips: () => set({clips: []}),
   hydrate: async () => {
     try {
-      const [duration, sensitivity, themeMode, cameraModeSaved] = await Promise.all([
+      const [duration, sensitivity, themeMode, cameraModeSaved, onboarding] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY_CLIP_DURATION),
         AsyncStorage.getItem(STORAGE_KEY_SENSITIVITY),
         AsyncStorage.getItem(STORAGE_KEY_THEME_MODE),
         AsyncStorage.getItem(STORAGE_KEY_CAMERA_MODE),
+        AsyncStorage.getItem(STORAGE_KEY_ONBOARDING),
       ]);
       const update: Partial<AppState> = {};
       if (duration) {
@@ -203,6 +208,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (cameraModeSaved && (['back', 'front'] as string[]).includes(cameraModeSaved)) {
         update.cameraMode = cameraModeSaved as CameraMode;
+      }
+      if (onboarding === '1') {
+        update.onboardingComplete = true;
       }
       if (Object.keys(update).length > 0) {
         set(update);
