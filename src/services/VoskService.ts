@@ -86,6 +86,7 @@ class VoskServiceClass {
               if (__DEV__) console.log('[VoskService] STOP_MATCH at ' + Date.now() + ': ' + stopMatched);
               this.stopWordFired = true;
               DeviceEventEmitter.emit('StopDash');
+              this.stopWordFired = false;
             }
           }
         },
@@ -111,6 +112,7 @@ class VoskServiceClass {
               if (__DEV__) console.log('[VoskService] STOP_MATCH at ' + Date.now() + ': ' + stopMatched);
               this.stopWordFired = true;
               DeviceEventEmitter.emit('StopDash');
+              this.stopWordFired = false;
             }
           }
         },
