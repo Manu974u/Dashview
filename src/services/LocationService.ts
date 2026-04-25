@@ -24,7 +24,7 @@ const PARKED_TICKS_THRESHOLD = 3; // require 3 slow ticks before switching to pa
 
 const DRIVING_OPTIONS: GeoOptions = {
   enableHighAccuracy: false, // PRIORITY_BALANCED_POWER_ACCURACY — big battery saving
-  distanceFilter: 10,        // only update if moved at least 10 m
+  distanceFilter: 0,         // BUG1 fix: no distance gate — speed updates every interval tick
   interval: 1_000,           // 1 Hz
   fastestInterval: 500,
   forceRequestLocation: true,

@@ -21,10 +21,18 @@ class SpeedMonitorServiceClass {
   private samples: SpeedSample[] = [];
   private lastTriggerTime = 0;
   private onImpact: ImpactCallback | null = null;
+  private onSpeedLimitExceeded: (() => void) | null = null;
   private pollInterval: ReturnType<typeof setInterval> | null = null;
+  // BUG 4: track whether we are currently above the speed limit to avoid
+  // re-firing the alert every second while the vehicle stays over the limit.
+  private wasAboveSpeedLimit = false;
 
   setImpactCallback(cb: ImpactCallback) {
     this.onImpact = cb;
+  }
+
+  setSpeedLimitExceededCallback(cb: () => void) {
+    this.onSpeedLimitExceeded = cb;
   }
 
   start(): void {
@@ -44,6 +52,8 @@ class SpeedMonitorServiceClass {
     }
     this.samples = [];
     this.lastTriggerTime = 0;
+    this.wasAboveSpeedLimit = false;
+    useAppStore.getState().setSpeedLimitExceeded(false);
   }
 
   private tick(): void {
@@ -62,6 +72,10 @@ class SpeedMonitorServiceClass {
     const cutoff = now - SAMPLE_WINDOW_SIZE * 1_000;
     this.samples = this.samples.filter(s => s.timestamp >= cutoff);
 
+    // BUG 4: speed limit alert runs every tick — independent of the impact cooldown.
+    // Must be checked before the cooldown guard so a crash trigger can't suppress it.
+    this.checkSpeedLimit(speedKmh, store);
+
     const sensitivity: SensitivityLevel = store.sensitivity;
     const cooldownElapsed = now - this.lastTriggerTime > COOLDOWN_MS;
 
@@ -79,6 +93,35 @@ class SpeedMonitorServiceClass {
       useAppStore.getState().setCurrentSpeed(speedKmh);
       useAppStore.getState().setLastSpeedDrop({from: fromSpeed, to: speedKmh});
       this.onImpact?.();
+    }
+  }
+
+  /**
+   * Checks whether currentSpeed exceeds the configured manual speed limit.
+   * Fires the alert callback ONCE when the limit is first exceeded, then
+   * stays silent until speed drops back below the limit (edge-triggered).
+   */
+  private checkSpeedLimit(speedKmh: number, store: ReturnType<typeof useAppStore.getState>): void {
+    if (store.speedLimitMode !== 'manual') {
+      // Not in manual mode — clear any lingering exceeded state and return.
+      if (this.wasAboveSpeedLimit) {
+        this.wasAboveSpeedLimit = false;
+        useAppStore.getState().setSpeedLimitExceeded(false);
+      }
+      return;
+    }
+    const limit = store.manualSpeedLimitKmh;
+    const isAbove = speedKmh > limit;
+
+    if (isAbove && !this.wasAboveSpeedLimit) {
+      // Rising edge: speed just crossed above the limit.
+      this.wasAboveSpeedLimit = true;
+      useAppStore.getState().setSpeedLimitExceeded(true);
+      this.onSpeedLimitExceeded?.();
+    } else if (!isAbove && this.wasAboveSpeedLimit) {
+      // Falling edge: speed dropped back below the limit — reset alert.
+      this.wasAboveSpeedLimit = false;
+      useAppStore.getState().setSpeedLimitExceeded(false);
     }
   }
 

@@ -677,7 +677,10 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
                     emit("DashSpeech:results", map)
                     if (isStopHypothesis(hypothesis)) acquireStopWakeLockAndEmit()
                     if (isRunning) {
-                        recognitionHandler.postDelayed({ startListening() }, 100)
+                        // BUG5 fix: 300 ms allows the AudioRecord buffer to stabilise
+                        // before the next recognition cycle starts, preventing the
+                        // first utterance from being missed on rapid wake-word retries.
+                        recognitionHandler.postDelayed({ startListening() }, 300)
                     }
                 }
                 override fun onFinalResult(hypothesis: String) {
@@ -736,14 +739,18 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
     }
 
     /**
-     * Acquires a PARTIAL_WAKE_LOCK (CPU only, no screen) for 3s, then emits StopDash to JS.
-     * When the screen is locked, the JS bridge may be throttled — the wake lock ensures the
-     * event is processed before the CPU can sleep again.
+     * Acquires a SCREEN_BRIGHT_WAKE_LOCK + ACQUIRE_CAUSES_WAKEUP for 3s, then emits StopDash to JS.
+     * On Honor/HwPowerManagerService, PARTIAL_WAKE_LOCK is killed aggressively between recording
+     * cycles. SCREEN_BRIGHT_WAKE_LOCK + ACQUIRE_CAUSES_WAKEUP physically wakes the screen,
+     * guaranteeing the JS thread is alive to receive the event.
      */
     private fun acquireStopWakeLockAndEmit() {
         try {
             val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
-            val wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "DashViewCar::StopDashLock")
+            val wl = pm.newWakeLock(
+                PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                "DashViewCar::StopDashLock"
+            )
             wl.acquire(3_000L)
             emit("StopDash", null)
             Log.d(TAG, "StopDash emitted (wake lock 3s)")

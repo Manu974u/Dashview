@@ -23,6 +23,7 @@ export default function ClipPlayer({uri, onClose}: Props): React.JSX.Element {
   const [paused, setPaused] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   function handleLoad(data: OnLoadData) {
     setDuration(Math.floor(data.duration));
@@ -32,18 +33,50 @@ export default function ClipPlayer({uri, onClose}: Props): React.JSX.Element {
     setCurrentTime(Math.floor(data.currentTime));
   }
 
+  function handleError(e: any) {
+    const msg: string =
+      e?.error?.errorString ??
+      e?.message ??
+      'Unable to play this video. The file may be corrupted or incomplete.';
+    setError(msg);
+  }
+
+  const safeUri = uri && uri.trim() ? `file://${uri}` : null;
   const progress = duration > 0 ? currentTime / duration : 0;
+
+  // Error / invalid URI state
+  if (!safeUri || error) {
+    return (
+      <View style={styles.container}>
+        <StatusBar hidden />
+        <View style={styles.errorBox}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorTitle}>Playback Error</Text>
+          <Text style={styles.errorMessage}>
+            {error ?? 'Video file path is invalid.'}
+          </Text>
+          <TouchableOpacity
+            style={styles.errorCloseBtn}
+            onPress={onClose}
+            accessibilityLabel="Close player">
+            <Text style={styles.errorCloseBtnText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <StatusBar hidden />
       <Video
-        source={{uri: `file://${uri}`}}
+        source={{uri: safeUri}}
         style={styles.video}
         resizeMode="contain"
         paused={paused}
         onLoad={handleLoad}
         onProgress={handleProgress}
+        onError={handleError}
         repeat={false}
         onEnd={() => setPaused(true)}
       />
@@ -147,6 +180,42 @@ function createStyles(t: Theme) {
     playBtnText: {
       color: '#FFFFFF',
       fontSize: 20,
+    },
+    // Error state
+    errorBox: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 32,
+      gap: 12,
+    },
+    errorIcon: {
+      fontSize: 48,
+    },
+    errorTitle: {
+      color: '#FFFFFF',
+      fontSize: 20,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    errorMessage: {
+      color: 'rgba(255,255,255,0.7)',
+      fontSize: 14,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    errorCloseBtn: {
+      marginTop: 8,
+      paddingHorizontal: 32,
+      paddingVertical: 12,
+      borderRadius: 24,
+      borderWidth: 2,
+      borderColor: '#FFFFFF',
+    },
+    errorCloseBtnText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
     },
   });
 }

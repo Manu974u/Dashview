@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import {
   StatusBar,
   ToastAndroid,
   Platform,
+  TextInput,
 } from 'react-native';
-import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, ThemeMode, CameraMode} from '../store/useAppStore';
+import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, ThemeMode, CameraMode, SpeedLimitMode} from '../store/useAppStore';
 import {SensitivityLevel} from '../utils/speedCalc';
 import {deleteClip, loadClips} from '../services/ClipStorageService';
 import {SpeedMonitorService} from '../services/SpeedMonitorService';
@@ -48,6 +49,15 @@ export default function SettingsScreen(): React.JSX.Element {
   const setThemeMode = useAppStore(s => s.setThemeMode);
   const cameraMode = useAppStore(s => s.cameraMode);
   const setCameraMode = useAppStore(s => s.setCameraMode);
+  const speedLimitMode = useAppStore(s => s.speedLimitMode);
+  const setSpeedLimitMode = useAppStore(s => s.setSpeedLimitMode);
+  const manualSpeedLimitKmh = useAppStore(s => s.manualSpeedLimitKmh);
+  const setManualSpeedLimitKmh = useAppStore(s => s.setManualSpeedLimitKmh);
+  const nightMode = useAppStore(s => s.nightMode);
+  const setNightMode = useAppStore(s => s.setNightMode);
+
+  // Local text-input state for manual speed limit (keeps input responsive)
+  const [limitInput, setLimitInput] = useState(String(manualSpeedLimitKmh));
 
   async function handleClearAllClips() {
     Alert.alert(t('settings.clearAllTitle'), t('settings.clearAllBody'), [
@@ -233,6 +243,52 @@ export default function SettingsScreen(): React.JSX.Element {
                   />
                 </View>
               </View>
+              <Divider styles={styles} />
+              {/* Speed limit alert — BUG 3 */}
+              <View>
+                <Text style={styles.rowLabel}>{t('settings.speedLimitLabel')}</Text>
+                <Text style={styles.rowDesc}>{t('settings.speedLimitDesc')}</Text>
+                <View style={{marginTop: spacing.sm}}>
+                  <SegmentedControl<SpeedLimitMode>
+                    options={[
+                      {value: 'auto', label: t('settings.speedLimitOff'), desc: ''},
+                      {value: 'manual', label: t('settings.speedLimitManual'), desc: t('settings.speedLimitManualDesc')},
+                    ]}
+                    selected={speedLimitMode}
+                    onSelect={setSpeedLimitMode}
+                    theme={theme}
+                    styles={styles}
+                  />
+                </View>
+                {speedLimitMode === 'manual' && (
+                  <View style={[styles.limitInputRow, {marginTop: spacing.sm}]}>
+                    <TextInput
+                      style={[styles.limitInput, {color: theme.textPrimary, borderColor: theme.border, backgroundColor: theme.backgroundSecondary}]}
+                      value={limitInput}
+                      onChangeText={text => {
+                        setLimitInput(text);
+                        const num = parseInt(text, 10);
+                        if (!isNaN(num) && num >= 30 && num <= 200) {
+                          setManualSpeedLimitKmh(num);
+                        }
+                      }}
+                      onBlur={() => {
+                        const num = parseInt(limitInput, 10);
+                        if (isNaN(num) || num < 30 || num > 200) {
+                          setLimitInput(String(manualSpeedLimitKmh));
+                        }
+                      }}
+                      keyboardType="numeric"
+                      maxLength={3}
+                      accessibilityLabel={t('settings.speedLimitInputHint')}
+                      placeholder={t('settings.speedLimitInputHint')}
+                      placeholderTextColor={theme.textSecondary}
+                      returnKeyType="done"
+                    />
+                    <Text style={[styles.rowLabel, {marginLeft: spacing.sm}]}>km/h</Text>
+                  </View>
+                )}
+              </View>
             </>
           )}
         </View>
@@ -302,6 +358,21 @@ export default function SettingsScreen(): React.JSX.Element {
             <Text style={[styles.rowNote, {marginTop: spacing.xs}]}>
               {cameraMode === 'front' ? t('settings.cameraFrontNote') : t('settings.cameraBackNote')}
             </Text>
+          </View>
+          <Divider styles={styles} />
+          {/* Night mode — BUG 6 */}
+          <View style={styles.toggleRow}>
+            <View style={styles.flex}>
+              <Text style={styles.rowLabel}>{t('settings.nightModeLabel')}</Text>
+              <Text style={styles.rowDesc}>{t('settings.nightModeDesc')}</Text>
+            </View>
+            <Switch
+              value={nightMode}
+              onValueChange={setNightMode}
+              trackColor={{false: theme.border, true: theme.accent + '70'}}
+              thumbColor={nightMode ? theme.accent : theme.textSecondary}
+              accessibilityLabel="Toggle night mode"
+            />
           </View>
         </View>
 
@@ -764,6 +835,21 @@ function createStyles(t: typeof lightTheme) {
       fontSize: 12,
       lineHeight: 18,
       fontStyle: 'italic',
+    },
+    limitInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    limitInput: {
+      flex: 1,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 8,
+      fontSize: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+      maxWidth: 100,
     },
   });
 }

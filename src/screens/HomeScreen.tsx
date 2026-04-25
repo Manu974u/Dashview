@@ -87,6 +87,8 @@ export default function HomeScreen(): React.JSX.Element {
   const currentSpeedKmh = useAppStore(s => s.currentSpeedKmh);
   const gpsActive = useAppStore(s => s.gpsActive);
   const lastSpeedDrop = useAppStore(s => s.lastSpeedDrop);
+  const speedLimitExceeded = useAppStore(s => s.speedLimitExceeded);
+  const nightMode = useAppStore(s => s.nightMode);
   const voiceWarningShown = useAppStore(s => s.voiceWarningShown);
   const setVoiceWarningShown = useAppStore(s => s.setVoiceWarningShown);
 
@@ -342,6 +344,18 @@ export default function HomeScreen(): React.JSX.Element {
       if (store.mode !== 'inactive') {
         store.setRecordingTrigger('impact');
         store.setMode('recording');
+      }
+    });
+
+    // BUG 4: show a toast once when speed limit is first exceeded.
+    SpeedMonitorService.setSpeedLimitExceededCallback(() => {
+      if (Platform.OS === 'android') {
+        const store = useAppStore.getState();
+        const limit = store.manualSpeedLimitKmh;
+        ToastAndroid.show(
+          `⚠️ Speed limit exceeded! (>${limit} km/h)`,
+          ToastAndroid.LONG,
+        );
       }
     });
 
@@ -763,6 +777,7 @@ export default function HomeScreen(): React.JSX.Element {
           audio={false}
           videoStabilizationMode="off"
           zoom={0}
+          {...(nightMode ? {exposure: -1} : {})}
           onStarted={handleCameraStarted}
           onStopped={handleCameraStopped}
           onInitialized={() => { if (__DEV__) console.log('[HomeScreen] Camera onInitialized'); }}
@@ -1022,13 +1037,12 @@ export default function HomeScreen(): React.JSX.Element {
                 <View
                   style={[
                     styles.pill,
-                    {
-                      backgroundColor: theme.speed + '30',
-                      borderColor: theme.speed + '60',
-                    },
+                    speedLimitExceeded
+                      ? {backgroundColor: theme.recordingRed + '30', borderColor: theme.recordingRed + '80'}
+                      : {backgroundColor: theme.speed + '30', borderColor: theme.speed + '60'},
                   ]}>
-                  <Text style={[styles.pillText, {color: theme.speed}]}>
-                    ⚡ {Math.round(currentSpeedKmh)} km/h
+                  <Text style={[styles.pillText, {color: speedLimitExceeded ? theme.recordingRed : theme.speed}]}>
+                    {speedLimitExceeded ? '🚨' : '⚡'} {Math.round(currentSpeedKmh)} km/h
                   </Text>
                 </View>
               )}

@@ -214,7 +214,7 @@ export const translations = {
 
       sectionAbout: 'About',
       appVersion: 'App Version',
-      appVersionValue: 'DashViewCar v1.0.5',
+      appVersionValue: 'DashViewCar v1.0.6',
 
       sectionDev: 'Developer',
       devReloadClips: '🔄  Reload clips from disk',
@@ -238,6 +238,17 @@ export const translations = {
       themeModeLight: 'Day',
       themeModeDark: 'Night',
       themeModeAutoDesc: 'Switches automatically at 6:00 and 20:00',
+
+      speedLimitLabel: 'Speed Limit Alert',
+      speedLimitDesc: 'Alert when you exceed a set speed',
+      speedLimitOff: 'Off',
+      speedLimitManual: 'Manual',
+      speedLimitManualDesc: 'Alert above your chosen limit',
+      speedLimitInputHint: 'Speed limit (30–200 km/h)',
+      speedLimitExceededToast: '⚠️ Speed limit exceeded!',
+
+      nightModeLabel: 'Night Mode',
+      nightModeDesc: 'Reduces camera exposure to handle headlight glare',
     },
   },
 
@@ -467,7 +478,7 @@ export const translations = {
 
       sectionAbout: 'À propos',
       appVersion: 'Version',
-      appVersionValue: 'DashViewCar v1.0.5',
+      appVersionValue: 'DashViewCar v1.0.6',
 
       sectionDev: 'Développeur',
       devReloadClips: '🔄  Recharger les clips depuis le disque',
@@ -494,6 +505,17 @@ export const translations = {
       themeModeLight: 'Jour',
       themeModeDark: 'Nuit',
       themeModeAutoDesc: 'Bascule automatiquement à 6h et 20h',
+
+      speedLimitLabel: 'Alerte vitesse max',
+      speedLimitDesc: 'Alerte quand vous dépassez la limite',
+      speedLimitOff: 'Désactivé',
+      speedLimitManual: 'Manuel',
+      speedLimitManualDesc: 'Alerte au-dessus de votre limite',
+      speedLimitInputHint: 'Limite (30–200 km/h)',
+      speedLimitExceededToast: '⚠️ Vitesse limite dépassée !',
+
+      nightModeLabel: 'Mode nuit',
+      nightModeDesc: 'Réduit l\'exposition de la caméra pour les phares',
     },
   },
 } as const;
