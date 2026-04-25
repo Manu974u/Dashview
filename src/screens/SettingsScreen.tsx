@@ -13,7 +13,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
-import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, ThemeMode, CameraMode, SpeedLimitMode} from '../store/useAppStore';
+import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, ThemeMode, CameraMode, SpeedLimitMode, NightModeMode} from '../store/useAppStore';
 import {SensitivityLevel} from '../utils/speedCalc';
 import {deleteClip, loadClips} from '../services/ClipStorageService';
 import {SpeedMonitorService} from '../services/SpeedMonitorService';
@@ -55,6 +55,8 @@ export default function SettingsScreen(): React.JSX.Element {
   const setManualSpeedLimitKmh = useAppStore(s => s.setManualSpeedLimitKmh);
   const nightMode = useAppStore(s => s.nightMode);
   const setNightMode = useAppStore(s => s.setNightMode);
+  const nightModeMode = useAppStore(s => s.nightModeMode);
+  const setNightModeMode = useAppStore(s => s.setNightModeMode);
 
   // Local text-input state for manual speed limit (keeps input responsive)
   const [limitInput, setLimitInput] = useState(String(manualSpeedLimitKmh));
@@ -251,7 +253,7 @@ export default function SettingsScreen(): React.JSX.Element {
                 <View style={{marginTop: spacing.sm}}>
                   <SegmentedControl<SpeedLimitMode>
                     options={[
-                      {value: 'auto', label: t('settings.speedLimitOff'), desc: ''},
+                      {value: 'auto', label: t('settings.speedLimitOff'), desc: t('settings.speedLimitAutoDesc')},
                       {value: 'manual', label: t('settings.speedLimitManual'), desc: t('settings.speedLimitManualDesc')},
                     ]}
                     selected={speedLimitMode}
@@ -360,19 +362,36 @@ export default function SettingsScreen(): React.JSX.Element {
             </Text>
           </View>
           <Divider styles={styles} />
-          {/* Night mode — BUG 6 */}
-          <View style={styles.toggleRow}>
-            <View style={styles.flex}>
-              <Text style={styles.rowLabel}>{t('settings.nightModeLabel')}</Text>
-              <Text style={styles.rowDesc}>{t('settings.nightModeDesc')}</Text>
+          {/* Night mode — BUG 6 + Auto mode */}
+          <View>
+            <Text style={styles.rowLabel}>{t('settings.nightModeLabel')}</Text>
+            <Text style={styles.rowDesc}>{t('settings.nightModeDesc')}</Text>
+            <View style={{marginTop: spacing.sm}}>
+              <SegmentedControl<NightModeMode>
+                options={[
+                  {value: 'auto',   label: t('settings.nightModeAuto'),   desc: t('settings.nightModeAutoDesc')},
+                  {value: 'manual', label: t('settings.nightModeManual'), desc: ''},
+                ]}
+                selected={nightModeMode}
+                onSelect={setNightModeMode}
+                theme={theme}
+                styles={styles}
+              />
             </View>
-            <Switch
-              value={nightMode}
-              onValueChange={setNightMode}
-              trackColor={{false: theme.border, true: theme.accent + '70'}}
-              thumbColor={nightMode ? theme.accent : theme.textSecondary}
-              accessibilityLabel="Toggle night mode"
-            />
+            {nightModeMode === 'manual' && (
+              <View style={[styles.toggleRow, {marginTop: spacing.sm}]}>
+                <View style={styles.flex}>
+                  <Text style={styles.rowDesc}>{t('settings.nightModeManualDesc')}</Text>
+                </View>
+                <Switch
+                  value={nightMode}
+                  onValueChange={setNightMode}
+                  trackColor={{false: theme.border, true: theme.accent + '70'}}
+                  thumbColor={nightMode ? theme.accent : theme.textSecondary}
+                  accessibilityLabel="Toggle night mode"
+                />
+              </View>
+            )}
           </View>
         </View>
 

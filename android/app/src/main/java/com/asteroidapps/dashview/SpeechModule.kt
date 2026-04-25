@@ -74,6 +74,12 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
     private var speechService: SpeechService? = null
     private var voskModel: Model? = null
     @Volatile private var isRunning = false
+    // FIX 3: tracks whether JS is currently in 'recording' mode.
+    // On Honor/HwPowerManagerService, the old process is killed on screen wake.
+    // When stop word fires AND isRecording=true, Kotlin stops the recogniser
+    // directly and acquires a screen wake lock BEFORE emitting StopDash,
+    // ensuring the JS bridge is alive to receive the event.
+    @Volatile private var isRecording = false
 
     // ── WakeLock (held only during active recording, ~65s max) ────────────────
     private var wakeLock: PowerManager.WakeLock? = null
@@ -185,6 +191,19 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
             Log.w(TAG, "releaseWakeLock failed: ${e.message}")
             promise.reject("WAKELOCK_ERROR", e.message)
         }
+    }
+
+    /**
+     * FIX 3: Called by JS whenever mode enters or leaves 'recording'.
+     * Allows Kotlin to know when a recording is active so it can stop the
+     * recogniser on the Kotlin side before emitting StopDash (bypassing
+     * the dead JS bridge on Honor process-kill scenarios).
+     */
+    @ReactMethod
+    fun setRecording(value: Boolean, promise: Promise) {
+        isRecording = value
+        Log.d(TAG, "setRecording: isRecording=$value")
+        promise.resolve(null)
     }
 
     /**
@@ -743,9 +762,19 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
      * On Honor/HwPowerManagerService, PARTIAL_WAKE_LOCK is killed aggressively between recording
      * cycles. SCREEN_BRIGHT_WAKE_LOCK + ACQUIRE_CAUSES_WAKEUP physically wakes the screen,
      * guaranteeing the JS thread is alive to receive the event.
+     *
+     * FIX 3: When isRecording=true, stop the Vosk recogniser in Kotlin directly
+     * before emitting. This prevents the dying process from leaving the recogniser
+     * in a broken state, and ensures the screen wake happens before the JS bridge
+     * processes the event (critical on Honor 2nd-cycle locked-screen scenario).
      */
     private fun acquireStopWakeLockAndEmit() {
         try {
+            if (isRecording) {
+                Log.d(TAG, "StopDash: stopping recording in Kotlin directly")
+                destroyRecognizer()
+                isRecording = false
+            }
             val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
             val wl = pm.newWakeLock(
                 PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,

@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
 import {useAppStore} from '../store/useAppStore';
+import {getNightModeAuto} from '../utils/nightModeAuto';
 import {RecordingService} from '../services/RecordingService';
 import {VoskService} from '../services/VoskService';
 import {SpeedMonitorService} from '../services/SpeedMonitorService';
@@ -89,6 +90,7 @@ export default function HomeScreen(): React.JSX.Element {
   const lastSpeedDrop = useAppStore(s => s.lastSpeedDrop);
   const speedLimitExceeded = useAppStore(s => s.speedLimitExceeded);
   const nightMode = useAppStore(s => s.nightMode);
+  const nightModeMode = useAppStore(s => s.nightModeMode);
   const voiceWarningShown = useAppStore(s => s.voiceWarningShown);
   const setVoiceWarningShown = useAppStore(s => s.setVoiceWarningShown);
 
@@ -99,6 +101,9 @@ export default function HomeScreen(): React.JSX.Element {
   const [showBatteryBanner, setShowBatteryBanner] = useState(false);
   const isCameraReadyForTest = useRef(false);
   const [isHonorDevice, setIsHonorDevice] = useState(false);
+
+  // FIX 2: night mode exposure — auto = time-based, manual = user toggle
+  const isNightActive = nightModeMode === 'auto' ? getNightModeAuto() : nightMode;
 
   const isListening = mode === 'listening';
   const isRecording = mode === 'recording';
@@ -315,6 +320,14 @@ export default function HomeScreen(): React.JSX.Element {
     });
     return () => sub.remove();
   }, []);
+
+  // ── FIX 3: Notify Kotlin when recording starts/stops ─────────────────────
+  // Honor/Huawei kills the old process on screen wake. When isRecording=true,
+  // Kotlin can stop the recognition engine and acquire a wake lock directly
+  // before emitting StopDash, bypassing the dead JS bridge.
+  useEffect(() => {
+    NativeModules.DashSpeech?.setRecording?.(mode === 'recording');
+  }, [mode]);
 
   // ── Wake word handler ─────────────────────────────────────────────────────
   const handleWakeWord = useCallback(() => {
@@ -777,7 +790,7 @@ export default function HomeScreen(): React.JSX.Element {
           audio={false}
           videoStabilizationMode="off"
           zoom={0}
-          {...(nightMode ? {exposure: -1} : {})}
+          {...(isNightActive ? {exposure: -1} : {})}
           onStarted={handleCameraStarted}
           onStopped={handleCameraStopped}
           onInitialized={() => { if (__DEV__) console.log('[HomeScreen] Camera onInitialized'); }}

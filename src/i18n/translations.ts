@@ -241,7 +241,8 @@ export const translations = {
 
       speedLimitLabel: 'Speed Limit Alert',
       speedLimitDesc: 'Alert when you exceed a set speed',
-      speedLimitOff: 'Off',
+      speedLimitOff: 'Auto',
+      speedLimitAutoDesc: 'Speed limit detected automatically via GPS',
       speedLimitManual: 'Manual',
       speedLimitManualDesc: 'Alert above your chosen limit',
       speedLimitInputHint: 'Speed limit (30–200 km/h)',
@@ -249,6 +250,10 @@ export const translations = {
 
       nightModeLabel: 'Night Mode',
       nightModeDesc: 'Reduces camera exposure to handle headlight glare',
+      nightModeAuto: 'Auto',
+      nightModeManual: 'Manual',
+      nightModeAutoDesc: 'Activates automatically based on time of day (winter: after 17:30, summer: after 21:30)',
+      nightModeManualDesc: 'Manually enable or disable night mode',
     },
   },
 
@@ -508,7 +513,8 @@ export const translations = {
 
       speedLimitLabel: 'Alerte vitesse max',
       speedLimitDesc: 'Alerte quand vous dépassez la limite',
-      speedLimitOff: 'Désactivé',
+      speedLimitOff: 'Auto',
+      speedLimitAutoDesc: 'Limite détectée automatiquement via GPS',
       speedLimitManual: 'Manuel',
       speedLimitManualDesc: 'Alerte au-dessus de votre limite',
       speedLimitInputHint: 'Limite (30–200 km/h)',
@@ -516,6 +522,10 @@ export const translations = {
 
       nightModeLabel: 'Mode nuit',
       nightModeDesc: 'Réduit l\'exposition de la caméra pour les phares',
+      nightModeAuto: 'Auto',
+      nightModeManual: 'Manuel',
+      nightModeAutoDesc: 'S\'active automatiquement selon l\'heure (hiver : après 17h30, été : après 21h30)',
+      nightModeManualDesc: 'Activer ou désactiver manuellement le mode nuit',
     },
   },
 } as const;

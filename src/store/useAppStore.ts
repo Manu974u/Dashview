@@ -12,6 +12,7 @@ const STORAGE_KEY_ONBOARDING = 'dashviewcar_onboarding_completed';
 const STORAGE_KEY_SPEED_LIMIT_MODE = 'dashviewcar_speed_limit_mode';
 const STORAGE_KEY_MANUAL_SPEED_LIMIT = 'dashviewcar_manual_speed_limit';
 const STORAGE_KEY_NIGHT_MODE = 'dashviewcar_night_mode';
+const STORAGE_KEY_NIGHT_MODE_MODE = 'dashviewcar_night_mode_mode';
 
 // Detect device locale at startup — used as the default language.
 // NativeModules.I18nManager.localeIdentifier returns e.g. "fr_FR", "en_US".
@@ -28,6 +29,7 @@ export type AppMode = 'inactive' | 'listening' | 'recording' | 'saving';
 export type ClipDuration = 60 | 120 | 240 | 480;
 export type CameraMode = 'back' | 'front';
 export type SpeedLimitMode = 'auto' | 'manual';
+export type NightModeMode = 'auto' | 'manual';
 
 export interface ClipMetadata {
   id: string;
@@ -88,6 +90,7 @@ interface AppState {
 
   // Night mode (BUG 6)
   nightMode: boolean;                // reduces camera exposure for headlight overexposure
+  nightModeMode: NightModeMode;      // 'auto' = time-based; 'manual' = user toggle
 
   // Dev mode
   devMode: boolean;
@@ -121,6 +124,7 @@ interface AppState {
   setManualSpeedLimitKmh: (v: number) => void;
   setSpeedLimitExceeded: (v: boolean) => void;
   setNightMode: (v: boolean) => void;
+  setNightModeMode: (m: NightModeMode) => void;
   tapVersionLabel: () => void;
   clearAllClips: () => void;
   hydrate: () => Promise<void>;
@@ -152,6 +156,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   manualSpeedLimitKmh: 90,
   speedLimitExceeded: false,
   nightMode: false,
+  nightModeMode: 'auto',
   devMode: false,
   devModeVersionTaps: 0,
 
@@ -208,6 +213,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({nightMode: v});
     AsyncStorage.setItem(STORAGE_KEY_NIGHT_MODE, v ? '1' : '0').catch(() => {});
   },
+  setNightModeMode: m => {
+    set({nightModeMode: m});
+    AsyncStorage.setItem(STORAGE_KEY_NIGHT_MODE_MODE, m).catch(() => {});
+  },
   tapVersionLabel: () => {
     const taps = get().devModeVersionTaps + 1;
     if (taps >= 5) {
@@ -228,6 +237,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         speedLimitModeSaved,
         manualLimitSaved,
         nightModeSaved,
+        nightModeModeSaved,
       ] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY_CLIP_DURATION),
         AsyncStorage.getItem(STORAGE_KEY_SENSITIVITY),
@@ -237,6 +247,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         AsyncStorage.getItem(STORAGE_KEY_SPEED_LIMIT_MODE),
         AsyncStorage.getItem(STORAGE_KEY_MANUAL_SPEED_LIMIT),
         AsyncStorage.getItem(STORAGE_KEY_NIGHT_MODE),
+        AsyncStorage.getItem(STORAGE_KEY_NIGHT_MODE_MODE),
       ]);
       const update: Partial<AppState> = {};
       if (duration) {
@@ -268,6 +279,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (nightModeSaved === '1') {
         update.nightMode = true;
+      }
+      if (nightModeModeSaved && (['auto', 'manual'] as string[]).includes(nightModeModeSaved)) {
+        update.nightModeMode = nightModeModeSaved as NightModeMode;
       }
       if (Object.keys(update).length > 0) {
         set(update);
