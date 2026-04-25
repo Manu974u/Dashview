@@ -355,6 +355,7 @@ export default function HomeScreen(): React.JSX.Element {
     SpeedMonitorService.setImpactCallback(() => {
       const store = useAppStore.getState();
       if (store.mode !== 'inactive') {
+        console.log('[SpeedProtection] recording started, syncing Kotlin isRecording');
         store.setRecordingTrigger('impact');
         store.setMode('recording');
       }

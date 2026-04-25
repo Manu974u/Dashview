@@ -202,7 +202,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun setRecording(value: Boolean, promise: Promise) {
         isRecording = value
-        Log.d(TAG, "setRecording: isRecording=$value")
+        Log.d(TAG, "setRecording called with: $value")
         promise.resolve(null)
     }
 

@@ -34,6 +34,10 @@ class RecordingServiceClass {
     const RECORDING_DURATION_SECONDS = useAppStore.getState().clipDuration;
 
     this.isRecording = true;
+    // Sync Kotlin isRecording flag — required for Stop Dash Kotlin fix (Honor/Huawei
+    // process-kill on screen wake). Belt-and-suspenders alongside the useEffect in HomeScreen.
+    NativeModules.DashSpeech?.setRecording?.(true);
+    console.log('[RecordingService] triggerRecording: trigger=' + trigger + ', Kotlin isRecording=true');
     const store = useAppStore.getState();
     store.setMode('recording');
     store.setRecordingTrigger(trigger);
@@ -76,6 +80,7 @@ class RecordingServiceClass {
           console.warn('[RecordingService] onRecordingError:', err);
           this.clearTimers();
           this.isRecording = false;
+          NativeModules.DashSpeech?.setRecording?.(false);
           const s = useAppStore.getState();
           s.setMode('listening');
           s.setRecordingTrigger(null);
@@ -86,6 +91,7 @@ class RecordingServiceClass {
     } catch (e: any) {
       this.clearTimers();
       this.isRecording = false;
+      NativeModules.DashSpeech?.setRecording?.(false);
       const s = useAppStore.getState();
       s.setMode('listening');
       s.setRecordingTrigger(null);
@@ -95,14 +101,33 @@ class RecordingServiceClass {
   }
 
   async stopEarly(): Promise<void> {
+    console.log('[RecordingService] stopEarly called, isRecording=' + this.isRecording);
     if (!this.isRecording) {
       return;
     }
+    // Notify Kotlin immediately — don't wait for saveClip/mode change.
+    NativeModules.DashSpeech?.setRecording?.(false);
     this.clearTimers();
+    if (!this.cameraRef) {
+      // Camera ref lost — force-reset state so user is never stuck on the recording screen.
+      console.warn('[RecordingService] stopEarly: cameraRef is null — force-resetting state');
+      this.isRecording = false;
+      NativeModules.DashSpeech?.releaseWakeLock?.()?.catch?.(() => {});
+      const s = useAppStore.getState();
+      s.setMode('listening');
+      s.setRecordingTrigger(null);
+      return;
+    }
     try {
-      await this.cameraRef?.stopRecording();
+      await this.cameraRef.stopRecording();
     } catch (e: any) {
-      console.warn('[RecordingService] stopEarly error:', e?.message ?? e);
+      console.warn('[RecordingService] stopEarly stopRecording error:', e?.message ?? e);
+      // stopRecording failed — force-reset so user isn't stuck.
+      this.isRecording = false;
+      NativeModules.DashSpeech?.releaseWakeLock?.()?.catch?.(() => {});
+      const s = useAppStore.getState();
+      s.setMode('listening');
+      s.setRecordingTrigger(null);
     }
   }
 
@@ -181,6 +206,8 @@ class RecordingServiceClass {
       NativeModules.DashSpeech?.releaseWakeLock?.()?.catch?.((e: any) =>
         console.warn('[RecordingService] releaseWakeLock failed:', e?.message ?? e),
       );
+      // Safety net: ensure Kotlin isRecording is cleared (may already be false from stopEarly).
+      NativeModules.DashSpeech?.setRecording?.(false);
       const s = useAppStore.getState();
       s.setMode('listening');
       s.setRecordingTrigger(null);
