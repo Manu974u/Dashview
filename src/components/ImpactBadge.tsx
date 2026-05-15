@@ -50,7 +50,7 @@ function createStyles(t: Theme) {
       borderColor: t.speedActive,
     },
     disabled: {
-      backgroundColor: 'rgba(0,0,0,0.3)',
+      backgroundColor: 'rgba(3,68,14,0.5)',
       borderColor: t.speedInactive,
     },
     icon: {

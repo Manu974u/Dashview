@@ -781,7 +781,7 @@ export default function HomeScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <StatusBar
-        barStyle={isRecording || testPhase !== null ? 'light-content' : theme.textPrimary === '#FFFFFF' ? 'light-content' : 'dark-content'}
+        barStyle="light-content"
         backgroundColor={isRecording || testPhase !== null ? 'transparent' : theme.background}
         translucent={isRecording || testPhase !== null}
       />
@@ -854,11 +854,11 @@ export default function HomeScreen(): React.JSX.Element {
       {/* ── Test overlay ───────────────────────────────────────────────────*/}
       {testPhase !== null && (
         <SafeAreaView
-          style={[styles.testOverlay, {backgroundColor: 'rgba(0,0,0,0.65)'}]}>
+          style={[styles.testOverlay, {backgroundColor: 'rgba(1,46,8,0.85)'}]}>
           <View
             style={[
               styles.recTopBar,
-              {backgroundColor: testPhase === 'saving' ? '#1B5E20' : '#1565C0'},
+              {backgroundColor: testPhase === 'saving' ? theme.secondary : theme.panel},
             ]}>
             {testPhase === 'recording' && <View style={styles.recDot} />}
             <Text style={styles.recTimer}>
@@ -952,7 +952,7 @@ export default function HomeScreen(): React.JSX.Element {
                 {borderColor: voiceCardBorder, borderWidth: voiceActive ? 2 : 1},
               ]}>
               <View style={styles.cardHeader}>
-                <View style={[styles.cardIconBox, {backgroundColor: '#EEF4FF'}]}>
+                <View style={[styles.cardIconBox, {backgroundColor: theme.panel}]}>
                   <Text style={styles.cardIconText}>🎤</Text>
                 </View>
                 <View style={styles.cardContent}>
@@ -983,7 +983,7 @@ export default function HomeScreen(): React.JSX.Element {
                 speedDetectionEnabled && {borderColor: theme.speed, borderWidth: 2},
               ]}>
               <View style={styles.cardHeader}>
-                <View style={[styles.cardIconBox, {backgroundColor: '#FFF8E1'}]}>
+                <View style={[styles.cardIconBox, {backgroundColor: theme.panel}]}>
                   <Text style={styles.cardIconText}>⚡</Text>
                 </View>
                 <View style={styles.cardContent}>
@@ -1012,7 +1012,7 @@ export default function HomeScreen(): React.JSX.Element {
             {/* Test Recording */}
             <View style={[styles.card, testDisabled && styles.cardDisabled]}>
               <View style={styles.cardHeader}>
-                <View style={[styles.cardIconBox, {backgroundColor: '#E8F5E9'}]}>
+                <View style={[styles.cardIconBox, {backgroundColor: theme.panel}]}>
                   <Text style={styles.cardIconText}>▶</Text>
                 </View>
                 <View style={styles.cardContent}>
@@ -1132,7 +1132,7 @@ function createStyles(t: Theme) {
       paddingHorizontal: spacing.lg,
       paddingBottom: spacing.sm,
       gap: spacing.sm,
-      backgroundColor: 'rgba(0,0,0,0.45)',
+      backgroundColor: 'rgba(1,46,8,0.75)',
     },
     recDot: {
       width: 12,
@@ -1141,7 +1141,7 @@ function createStyles(t: Theme) {
       backgroundColor: t.recordingRed,
     },
     recTimer: {
-      color: '#FFFFFF',
+      color: t.textPrimary,
       fontSize: 22,
       fontWeight: '700',
       fontVariant: ['tabular-nums'],
@@ -1157,10 +1157,10 @@ function createStyles(t: Theme) {
       alignItems: 'center',
     },
     triggerBadgeText: {
-      color: '#FFFFFF',
+      color: t.textPrimary,
       fontSize: 18,
       fontWeight: '700',
-      backgroundColor: 'rgba(0,0,0,0.55)',
+      backgroundColor: 'rgba(1,46,8,0.8)',
       paddingHorizontal: spacing.xl,
       paddingVertical: spacing.md,
       borderRadius: borderRadius.full,
@@ -1177,14 +1177,14 @@ function createStyles(t: Theme) {
       paddingHorizontal: spacing.xxl,
       paddingVertical: spacing.lg,
       borderRadius: borderRadius.full,
-      backgroundColor: 'rgba(255,255,255,0.15)',
+      backgroundColor: 'rgba(142,219,31,0.15)',
       borderWidth: 2,
-      borderColor: '#FFFFFF',
+      borderColor: t.accent,
       minWidth: 180,
       alignItems: 'center',
     },
     stopEarlyLabel: {
-      color: '#FFFFFF',
+      color: t.accent,
       fontSize: 18,
       fontWeight: '700',
       letterSpacing: 0.5,
@@ -1201,7 +1201,7 @@ function createStyles(t: Theme) {
       alignItems: 'center',
     },
     testCountdownNumber: {
-      color: '#FFFFFF',
+      color: t.highlight,
       fontSize: 96,
       fontWeight: '800',
       textAlign: 'center',
@@ -1211,20 +1211,20 @@ function createStyles(t: Theme) {
     overlayWarningBanner: {
       marginHorizontal: spacing.md,
       marginBottom: spacing.sm,
-      backgroundColor: '#FFF8E1',
+      backgroundColor: t.panel,
       borderRadius: borderRadius.md,
       borderWidth: 1,
-      borderColor: '#FFD600',
+      borderColor: t.accent,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
     overlayWarningText: {
-      color: '#5D4037',
+      color: t.textPrimary,
       fontSize: 13,
       fontWeight: '700',
     },
     overlayWarningSubText: {
-      color: '#795548',
+      color: t.textSecondary,
       fontSize: 12,
       marginTop: 2,
     },
@@ -1233,20 +1233,20 @@ function createStyles(t: Theme) {
     batteryWarningBanner: {
       marginHorizontal: spacing.md,
       marginBottom: spacing.sm,
-      backgroundColor: '#E8F5E9',
+      backgroundColor: t.panel,
       borderRadius: borderRadius.md,
       borderWidth: 1,
-      borderColor: '#43A047',
+      borderColor: t.secondary,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
     batteryWarningText: {
-      color: '#1B5E20',
+      color: t.textPrimary,
       fontSize: 13,
       fontWeight: '700',
     },
     batteryWarningSubText: {
-      color: '#2E7D32',
+      color: t.textSecondary,
       fontSize: 12,
       marginTop: 2,
     },
@@ -1255,26 +1255,26 @@ function createStyles(t: Theme) {
     honorWarningBanner: {
       marginHorizontal: spacing.md,
       marginBottom: spacing.sm,
-      backgroundColor: '#FBE9E7',
+      backgroundColor: t.panel,
       borderRadius: borderRadius.md,
       borderWidth: 1,
-      borderColor: '#FF7043',
+      borderColor: t.recordingRed,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
     honorWarningTitle: {
-      color: '#BF360C',
+      color: t.recordingRed,
       fontSize: 13,
       fontWeight: '700',
     },
     honorWarningBody: {
-      color: '#5D4037',
+      color: t.textSecondary,
       fontSize: 12,
       marginTop: 2,
       lineHeight: 17,
     },
     honorWarningAction: {
-      color: '#FF7043',
+      color: t.recordingRed,
       fontSize: 12,
       fontWeight: '700',
       marginTop: 4,
@@ -1369,7 +1369,7 @@ function createStyles(t: Theme) {
       backgroundColor: t.border,
     },
     testBtnLabel: {
-      color: '#FFFFFF',
+      color: t.gradientDark,
       fontSize: 13,
       fontWeight: '700',
     },
@@ -1408,9 +1408,9 @@ function createStyles(t: Theme) {
       padding: spacing.lg,
       width: '100%',
       gap: spacing.md,
-      shadowColor: '#000',
+      shadowColor: t.shadow,
       shadowOffset: {width: 0, height: 8},
-      shadowOpacity: 0.15,
+      shadowOpacity: 1,
       shadowRadius: 24,
       elevation: 12,
     },
@@ -1433,7 +1433,7 @@ function createStyles(t: Theme) {
       alignItems: 'center',
     },
     modalConfirmText: {
-      color: '#FFFFFF',
+      color: t.gradientDark,
       fontSize: 16,
       fontWeight: '700',
     },

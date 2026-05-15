@@ -38,7 +38,7 @@ function createStyles(t: Theme) {
       paddingHorizontal: 10,
       paddingVertical: 5,
       gap: 4,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: t.panel,
     },
     active: {
       borderWidth: 1,

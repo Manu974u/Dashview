@@ -40,7 +40,7 @@ const serviceOptions = {
     name: 'ic_launcher',
     type: 'mipmap',
   },
-  color: '#1E88E5',
+  color: '#8EDB1F',
   linkingURI: 'dashviewcar://home',
   parameters: {},
 };

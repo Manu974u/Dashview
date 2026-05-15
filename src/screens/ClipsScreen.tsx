@@ -180,7 +180,7 @@ export default function ClipsScreen(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
-        barStyle={theme.textPrimary === '#FFFFFF' ? 'light-content' : 'dark-content'}
+        barStyle="light-content"
         backgroundColor={theme.background}
       />
 
@@ -279,7 +279,7 @@ function createStyles(t: Theme) {
       paddingVertical: 3,
     },
     countBadgeText: {
-      color: '#FFFFFF',
+      color: t.gradientDark,
       fontSize: 12,
       fontWeight: '700',
     },
@@ -352,7 +352,7 @@ function createStyles(t: Theme) {
       alignItems: 'center',
     },
     emptyCTAText: {
-      color: '#FFFFFF',
+      color: t.gradientDark,
       fontSize: 14,
       fontWeight: '700',
       letterSpacing: 0.3,

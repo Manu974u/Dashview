@@ -118,7 +118,7 @@ function createStyles(t: Theme) {
   return StyleSheet.create({
     container: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: '#000',
+      backgroundColor: t.gradientDark,
       zIndex: 100,
     },
     video: {
@@ -134,12 +134,12 @@ function createStyles(t: Theme) {
       width: 48,
       height: 48,
       borderRadius: 24,
-      backgroundColor: 'rgba(0,0,0,0.6)',
+      backgroundColor: 'rgba(1,46,8,0.75)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     closeBtnText: {
-      color: '#FFFFFF',
+      color: t.textPrimary,
       fontSize: 18,
       fontWeight: '700',
     },
@@ -149,7 +149,7 @@ function createStyles(t: Theme) {
     },
     progressTrack: {
       height: 3,
-      backgroundColor: 'rgba(255,255,255,0.3)',
+      backgroundColor: 'rgba(142,219,31,0.3)',
       borderRadius: 2,
       overflow: 'hidden',
     },
@@ -164,7 +164,7 @@ function createStyles(t: Theme) {
       justifyContent: 'space-between',
     },
     timeText: {
-      color: '#FFFFFF',
+      color: t.textPrimary,
       fontSize: 12,
       fontWeight: '500',
       width: 40,
@@ -173,12 +173,12 @@ function createStyles(t: Theme) {
       width: 48,
       height: 48,
       borderRadius: 24,
-      backgroundColor: 'rgba(0,0,0,0.6)',
+      backgroundColor: 'rgba(1,46,8,0.75)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     playBtnText: {
-      color: '#FFFFFF',
+      color: t.textPrimary,
       fontSize: 20,
     },
     // Error state
@@ -193,13 +193,13 @@ function createStyles(t: Theme) {
       fontSize: 48,
     },
     errorTitle: {
-      color: '#FFFFFF',
+      color: t.textPrimary,
       fontSize: 20,
       fontWeight: '700',
       textAlign: 'center',
     },
     errorMessage: {
-      color: 'rgba(255,255,255,0.7)',
+      color: t.textSecondary,
       fontSize: 14,
       textAlign: 'center',
       lineHeight: 20,
@@ -210,10 +210,10 @@ function createStyles(t: Theme) {
       paddingVertical: 12,
       borderRadius: 24,
       borderWidth: 2,
-      borderColor: '#FFFFFF',
+      borderColor: t.accent,
     },
     errorCloseBtnText: {
-      color: '#FFFFFF',
+      color: t.accent,
       fontSize: 16,
       fontWeight: '600',
     },

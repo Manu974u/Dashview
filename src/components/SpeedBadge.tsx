@@ -38,7 +38,7 @@ function createStyles(t: Theme) {
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: t.panel,
       borderRadius: 12,
       paddingHorizontal: 10,
       paddingVertical: 5,

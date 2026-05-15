@@ -137,7 +137,7 @@ export default function SettingsScreen(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
-        barStyle={theme.textPrimary === '#FFFFFF' ? 'light-content' : 'dark-content'}
+        barStyle="light-content"
         backgroundColor={theme.background}
       />
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -808,7 +808,7 @@ function createStyles(t: typeof lightTheme) {
       fontWeight: '500',
     },
     segmentLabelSelected: {
-      color: '#FFFFFF',
+      color: t.gradientDark,
       fontWeight: '700',
     },
     segmentDesc: {

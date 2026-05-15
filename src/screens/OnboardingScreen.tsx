@@ -427,7 +427,7 @@ function createStyles(t: Theme) {
       opacity: 0.5,
     },
     nextBtnText: {
-      color: '#FFFFFF',
+      color: t.gradientDark,
       fontSize: 16,
       fontWeight: '700',
       letterSpacing: 0.5,
