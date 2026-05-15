@@ -29,6 +29,25 @@ android {
         versionName "1.0.6"
     }
 
+    // ABI split: ship only arm64-v8a (covers 95%+ of modern Android devices).
+    // Cuts native libs from 4 architectures down to 1 — saves ~40-60 MB.
+    splits {
+        abi {
+            enable true
+            reset()
+            include "arm64-v8a"
+            universalApk false
+        }
+    }
+
+    // JNI library compression: store .so files compressed rather than uncompressed.
+    // Reduces APK size at the cost of a slightly slower first load (negligible on modern devices).
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging false
+        }
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
