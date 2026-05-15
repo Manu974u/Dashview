@@ -298,7 +298,7 @@ function createStyles(t: Theme) {
       paddingHorizontal: spacing.sm,
     },
     headerBtnText: {
-      color: t.accent,
+      color: '#03440E',
       fontSize: 15,
       fontWeight: '600',
     },

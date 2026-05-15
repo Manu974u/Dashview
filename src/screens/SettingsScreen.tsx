@@ -562,7 +562,7 @@ function SectionHeader({title}: {title: string}) {
   const theme = useTheme();
   return (
     <Text style={{
-      color: theme.accent,
+      color: '#03440E',
       fontSize: 11,
       fontWeight: '700',
       letterSpacing: 1.5,

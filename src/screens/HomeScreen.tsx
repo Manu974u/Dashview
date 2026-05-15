@@ -1288,7 +1288,7 @@ function createStyles(t: Theme) {
       alignItems: 'center',
     },
     appLogo: {
-      color: t.accent,
+      color: '#03440E',
       fontSize: 18,
       fontWeight: '800',
       letterSpacing: 0.5,
@@ -1297,7 +1297,7 @@ function createStyles(t: Theme) {
       fontStyle: 'italic',
       fontSize: 13,
       fontWeight: '300',
-      color: t.accent + 'CC',
+      color: '#03440E',
       textAlign: 'center',
       letterSpacing: 0.3,
       marginTop: 4,

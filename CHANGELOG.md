@@ -5,8 +5,14 @@
 ### Added
 
 - **Green HUD palette** — complete UI redesign to a retro-futuristic tactical-green
-  theme (`#015A12` background, `#8EDB1F` lime accent, `#03440E` panel). Every screen,
-  component, and overlay updated. Fixed palette replaces the old day/night toggle.
+  theme (`#b5cf8f` sage-green background, `#8EDB1F` lime accent, `#03440E` panel).
+  Every screen, component, and overlay updated. Fixed palette replaces the old
+  day/night toggle.
+
+- **APK size optimization** — `android/app/build.gradle`: ABI split ships
+  `arm64-v8a` only (covers 95%+ of modern devices), jniLibs stored compressed.
+  Removed unused `vosk-model-small-en-us` asset (68 MB). APK reduced from 170 MB
+  to 68 MB.
 
 - **Night Mode auto** — `HomeScreen.tsx`: added 60-second interval to refresh the
   time-based auto value while the app is open. Previously the auto mode only evaluated
@@ -71,6 +77,23 @@
   `LocationService.ts`: added `GPS_SPIKE_THRESHOLD_KMH = 80` guard. Cheap Android
   chips emit 0→120→0 km/h bursts on tunnel exit or fix re-acquisition; samples with
   an implausible instant jump are now discarded silently.
+
+- **"Go Dash" not detected after first recording session**
+  `SpeechModule.kt`: after `StopDash`, `acquireStopWakeLockAndEmit()` now schedules
+  a 500 ms delayed `startListening()` restart. Previously `destroyRecognizer()` left
+  Vosk permanently dead — the `onResult` 300 ms restart loop never fired because the
+  speech service was already gone before `onResult` triggered.
+
+- **Background color updated to sage green `#b5cf8f`**
+  `src/theme/colors.ts`: `background` and `gradientDark` tokens changed from dark
+  forest green `#015A12` / `#012E08` to sage green `#b5cf8f` for improved daytime
+  readability. All screens inherit the change via the theme token.
+
+- **Text readability on light background**
+  `HomeScreen.tsx`, `SettingsScreen.tsx`, `ClipsScreen.tsx`: app title "DashViewCar",
+  slogan, section headers (Langues, Voix, Caméra…), and header action buttons were
+  using fluorescent lime `#8EDB1F` directly on the new `#b5cf8f` background.
+  Changed to dark panel `#03440E` for legible contrast.
 
 ---
 
