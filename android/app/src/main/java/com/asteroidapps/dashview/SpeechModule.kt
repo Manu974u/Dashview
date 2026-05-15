@@ -778,13 +778,24 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
         stopEmitted = true
         try {
             if (isRecording) {
-                // FIX: destroyRecognizer() must run on recognitionHandler thread (not Vosk audio thread)
+                // destroyRecognizer() must run on recognitionHandler thread (not Vosk audio thread)
                 // to avoid a data race with concurrent startListening() calls.
                 // isRecording is set to false immediately (atomic @Volatile write) so the next
                 // StopDash check in this same cycle is already cleared.
                 Log.d(TAG, "StopDash: scheduling recognizer stop on recognitionHandler thread")
                 isRecording = false
                 recognitionHandler.post { destroyRecognizer() }
+                // BUG FIX: after destroyRecognizer(), Vosk would stay dead because onResult's
+                // 300ms restart never fires (speech service already destroyed before onResult).
+                // Schedule a clean restart so "Go Dash" works again after the recording ends.
+                // Guard: if voice was toggled OFF (isRunning=false), stop() removes all pending
+                // callbacks via removeCallbacksAndMessages(), so this postDelayed is auto-cancelled.
+                if (isRunning) {
+                    recognitionHandler.postDelayed({
+                        startListening()
+                        Log.d(TAG, "Recognizer restarted after StopDash — ready for next session")
+                    }, 500L)
+                }
             }
             // TODO: SCREEN_BRIGHT_WAKE_LOCK is deprecated (no-op on API 26+, Android 8+).
             // On Honor/EMUI with Android 14 (API 34) this may not wake the screen.
