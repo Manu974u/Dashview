@@ -232,13 +232,6 @@ export const translations = {
       langEn: 'English',
       langFr: 'Français',
 
-      sectionTheme: 'THEME',
-      themeModeLabel: 'App Theme',
-      themeModeAuto: 'Auto',
-      themeModeLight: 'Day',
-      themeModeDark: 'Night',
-      themeModeAutoDesc: 'Switches automatically at 6:00 and 20:00',
-
       speedLimitLabel: 'Speed Limit Alert',
       speedLimitDesc: 'Alert when you exceed a set speed',
       speedLimitOff: 'Auto',
@@ -503,13 +496,6 @@ export const translations = {
       languageAutoDetected: 'Détectée depuis les paramètres de votre appareil',
       langEn: 'English',
       langFr: 'Français',
-
-      sectionTheme: 'THÈME',
-      themeModeLabel: "Thème de l'app",
-      themeModeAuto: 'Auto',
-      themeModeLight: 'Jour',
-      themeModeDark: 'Nuit',
-      themeModeAutoDesc: 'Bascule automatiquement à 6h et 20h',
 
       speedLimitLabel: 'Alerte vitesse max',
       speedLimitDesc: 'Alerte quand vous dépassez la limite',

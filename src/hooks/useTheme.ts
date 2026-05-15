@@ -1,25 +1,7 @@
-import {useEffect, useState} from 'react';
-import {useAppStore} from '../store/useAppStore';
-import {lightTheme, darkTheme, Theme} from '../theme/colors';
+import {lightTheme, Theme} from '../theme/colors';
 
-function getAutoTheme(): Theme {
-  const hour = new Date().getHours();
-  return hour >= 6 && hour < 20 ? lightTheme : darkTheme;
-}
-
+// Fixed green HUD palette — theme toggle removed in v1.1.
+// All components get the same tactical-green theme regardless of system setting.
 export function useTheme(): Theme {
-  const themeMode = useAppStore(s => s.themeMode);
-  const [autoTheme, setAutoTheme] = useState<Theme>(getAutoTheme());
-
-  useEffect(() => {
-    if (themeMode !== 'auto') return;
-    const interval = setInterval(() => {
-      setAutoTheme(getAutoTheme());
-    }, 60_000);
-    return () => clearInterval(interval);
-  }, [themeMode]);
-
-  if (themeMode === 'light') return lightTheme;
-  if (themeMode === 'dark') return darkTheme;
-  return autoTheme;
+  return lightTheme;
 }

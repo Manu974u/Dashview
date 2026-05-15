@@ -13,7 +13,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
-import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, ThemeMode, CameraMode, SpeedLimitMode, NightModeMode} from '../store/useAppStore';
+import {useAppStore, AutoDeleteOption, VideoQuality, ClipDuration, CameraMode, SpeedLimitMode, NightModeMode} from '../store/useAppStore';
 import {SensitivityLevel} from '../utils/speedCalc';
 import {deleteClip, loadClips} from '../services/ClipStorageService';
 import {SpeedMonitorService} from '../services/SpeedMonitorService';
@@ -45,8 +45,6 @@ export default function SettingsScreen(): React.JSX.Element {
   const language = useAppStore(s => s.language);
   const setLanguage = useAppStore(s => s.setLanguage);
   const languageIsAutoDetected = useAppStore(s => s.languageIsAutoDetected);
-  const themeMode = useAppStore(s => s.themeMode);
-  const setThemeMode = useAppStore(s => s.setThemeMode);
   const cameraMode = useAppStore(s => s.cameraMode);
   const setCameraMode = useAppStore(s => s.setCameraMode);
   const speedLimitMode = useAppStore(s => s.speedLimitMode);
@@ -142,26 +140,6 @@ export default function SettingsScreen(): React.JSX.Element {
       />
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.screenTitle}>{t('settings.title')}</Text>
-
-        {/* Theme */}
-        <SectionHeader title={t('settings.sectionTheme')} />
-        <View style={styles.card}>
-          <Text style={styles.rowLabel}>{t('settings.themeModeLabel')}</Text>
-          <Text style={styles.rowDesc}>{t('settings.themeModeAutoDesc')}</Text>
-          <View style={{marginTop: spacing.sm}}>
-            <SegmentedControl<ThemeMode>
-              options={[
-                {value: 'auto', label: t('settings.themeModeAuto'), desc: ''},
-                {value: 'light', label: t('settings.themeModeLight'), desc: ''},
-                {value: 'dark', label: t('settings.themeModeDark'), desc: ''},
-              ]}
-              selected={themeMode}
-              onSelect={setThemeMode}
-              theme={theme}
-              styles={styles}
-            />
-          </View>
-        </View>
 
         {/* Language */}
         <SectionHeader title={t('settings.sectionLanguage')} />

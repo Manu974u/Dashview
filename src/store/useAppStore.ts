@@ -6,7 +6,6 @@ import {Language} from '../i18n/translations';
 
 const STORAGE_KEY_CLIP_DURATION = 'dashviewcar_clip_duration';
 const STORAGE_KEY_SENSITIVITY = 'dashviewcar_sensitivity';
-const STORAGE_KEY_THEME_MODE = 'dashviewcar_theme_mode';
 const STORAGE_KEY_CAMERA_MODE = 'dashviewcar_camera_mode';
 const STORAGE_KEY_ONBOARDING = 'dashviewcar_onboarding_completed';
 const STORAGE_KEY_SPEED_LIMIT_MODE = 'dashviewcar_speed_limit_mode';
@@ -23,7 +22,6 @@ const _deviceLocale: string =
 const _defaultLanguage: Language = _deviceLocale.startsWith('fr') ? 'fr' : 'en';
 
 export type VideoQuality = '720p' | '1080p';
-export type ThemeMode = 'auto' | 'light' | 'dark';
 export type AutoDeleteOption = 'never' | '7days' | '30days';
 export type AppMode = 'inactive' | 'listening' | 'recording' | 'saving';
 export type ClipDuration = 60 | 120 | 240 | 480;
@@ -77,9 +75,6 @@ interface AppState {
   // true = language was set automatically from device locale; false = user manually chose it
   languageIsAutoDetected: boolean;
 
-  // Theme
-  themeMode: ThemeMode;
-
   // Camera mode
   cameraMode: CameraMode;
 
@@ -118,7 +113,6 @@ interface AppState {
   setVoiceWarningShown: (v: boolean) => void;
   setLanguage: (l: Language) => void;
   setLanguageAutoDetected: (v: boolean) => void;
-  setThemeMode: (m: ThemeMode) => void;
   setCameraMode: (m: CameraMode) => void;
   setSpeedLimitMode: (m: SpeedLimitMode) => void;
   setManualSpeedLimitKmh: (v: number) => void;
@@ -150,7 +144,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   voiceWarningShown: false,
   language: _defaultLanguage,
   languageIsAutoDetected: true,
-  themeMode: 'auto',
   cameraMode: 'back',
   speedLimitMode: 'auto',
   manualSpeedLimitKmh: 90,
@@ -192,10 +185,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   setVoiceWarningShown: v => set({voiceWarningShown: v}),
   setLanguage: l => set({language: l, languageIsAutoDetected: false}),
   setLanguageAutoDetected: v => set({languageIsAutoDetected: v}),
-  setThemeMode: m => {
-    set({themeMode: m});
-    AsyncStorage.setItem(STORAGE_KEY_THEME_MODE, m).catch(() => {});
-  },
   setCameraMode: m => {
     set({cameraMode: m});
     AsyncStorage.setItem(STORAGE_KEY_CAMERA_MODE, m).catch(() => {});
@@ -231,7 +220,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       const [
         duration,
         sensitivity,
-        themeMode,
         cameraModeSaved,
         onboarding,
         speedLimitModeSaved,
@@ -241,7 +229,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       ] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY_CLIP_DURATION),
         AsyncStorage.getItem(STORAGE_KEY_SENSITIVITY),
-        AsyncStorage.getItem(STORAGE_KEY_THEME_MODE),
         AsyncStorage.getItem(STORAGE_KEY_CAMERA_MODE),
         AsyncStorage.getItem(STORAGE_KEY_ONBOARDING),
         AsyncStorage.getItem(STORAGE_KEY_SPEED_LIMIT_MODE),
@@ -258,9 +245,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (sensitivity && (['low', 'medium', 'high'] as string[]).includes(sensitivity)) {
         update.sensitivity = sensitivity as SensitivityLevel;
-      }
-      if (themeMode && (['auto', 'light', 'dark'] as string[]).includes(themeMode)) {
-        update.themeMode = themeMode as ThemeMode;
       }
       if (cameraModeSaved && (['back', 'front'] as string[]).includes(cameraModeSaved)) {
         update.cameraMode = cameraModeSaved as CameraMode;
