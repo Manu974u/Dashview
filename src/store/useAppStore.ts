@@ -279,6 +279,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (nightModeSaved === '1') {
         update.nightMode = true;
+      } else if (nightModeSaved === '0') {
+        update.nightMode = false;
       }
       if (nightModeModeSaved && (['auto', 'manual'] as string[]).includes(nightModeModeSaved)) {
         update.nightModeMode = nightModeModeSaved as NightModeMode;

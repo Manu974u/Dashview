@@ -18,6 +18,11 @@ import {msToKmh} from '../utils/speedCalc';
 let watchId: number | null = null;
 let currentOptions: GeoOptions | null = null;
 let slowTickCount = 0; // consecutive ticks below PARKED_SPEED_KMH
+let lastValidSpeedKmh = 0; // for GPS spike rejection
+
+// Max plausible speed jump in one GPS tick (1 Hz). Rejects chip noise like 0→120→0
+// that occurs when the GPS re-acquires fix after a tunnel or urban canyon.
+const GPS_SPIKE_THRESHOLD_KMH = 80;
 
 const PARKED_SPEED_KMH = 5;
 const PARKED_TICKS_THRESHOLD = 3; // require 3 slow ticks before switching to parked mode
@@ -92,6 +97,15 @@ function startWatch(options: GeoOptions): void {
           ? msToKmh(coords.speed)
           : 0;
 
+      // GPS spike rejection: discard samples with an implausible instant jump.
+      // Cheap Android chips emit 0→120→0 km/h bursts on tunnel exit / fix re-acquisition.
+      const speedDelta = Math.abs(speedKmh - lastValidSpeedKmh);
+      if (lastValidSpeedKmh > 0 && speedDelta > GPS_SPIKE_THRESHOLD_KMH) {
+        if (__DEV__) console.log(`[LocationService] GPS spike rejected: ${lastValidSpeedKmh}→${Math.round(speedKmh)} km/h`);
+        return;
+      }
+      lastValidSpeedKmh = speedKmh;
+
       useAppStore.getState().setCurrentSpeed(Math.round(speedKmh));
       useAppStore.getState().setCurrentGps({
         lat: coords.latitude,
@@ -135,6 +149,7 @@ export function stopLocationWatch(): void {
   }
   currentOptions = null;
   slowTickCount = 0;
+  lastValidSpeedKmh = 0;
   useAppStore.getState().setGpsActive(false);
   useAppStore.getState().setCurrentSpeed(0);
 }

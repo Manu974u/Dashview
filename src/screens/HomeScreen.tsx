@@ -102,8 +102,18 @@ export default function HomeScreen(): React.JSX.Element {
   const isCameraReadyForTest = useRef(false);
   const [isHonorDevice, setIsHonorDevice] = useState(false);
 
-  // FIX 2: night mode exposure — auto = time-based, manual = user toggle
-  const isNightActive = nightModeMode === 'auto' ? getNightModeAuto() : nightMode;
+  // FIX 2: night mode exposure — auto = time-based (polled every 60s), manual = user toggle.
+  // nightModeAutoValue is seeded from device time at mount and refreshed every 60s so the
+  // camera exposure updates when the day/night threshold is crossed mid-session.
+  const [nightModeAutoValue, setNightModeAutoValue] = useState(() => getNightModeAuto());
+  useEffect(() => {
+    if (nightModeMode !== 'auto') return;
+    const interval = setInterval(() => {
+      setNightModeAutoValue(getNightModeAuto());
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [nightModeMode]);
+  const isNightActive = nightModeMode === 'auto' ? nightModeAutoValue : nightMode;
 
   const isListening = mode === 'listening';
   const isRecording = mode === 'recording';
@@ -326,7 +336,7 @@ export default function HomeScreen(): React.JSX.Element {
   // Kotlin can stop the recognition engine and acquire a wake lock directly
   // before emitting StopDash, bypassing the dead JS bridge.
   useEffect(() => {
-    NativeModules.DashSpeech?.setRecording?.(mode === 'recording');
+    NativeModules.DashSpeech?.setRecording?.(mode === 'recording')?.catch?.(() => {});
   }, [mode]);
 
   // ── Wake word handler ─────────────────────────────────────────────────────

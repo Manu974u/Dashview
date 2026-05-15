@@ -37,7 +37,7 @@ class RecordingServiceClass {
     this.isRecording = true;
     // Sync Kotlin isRecording flag — required for Stop Dash Kotlin fix (Honor/Huawei
     // process-kill on screen wake). Belt-and-suspenders alongside the useEffect in HomeScreen.
-    NativeModules.DashSpeech?.setRecording?.(true);
+    NativeModules.DashSpeech?.setRecording?.(true)?.catch?.(() => {});
     console.log('[RecordingService] triggerRecording: trigger=' + trigger + ', Kotlin isRecording=true');
     const store = useAppStore.getState();
     store.setMode('recording');
@@ -81,7 +81,7 @@ class RecordingServiceClass {
           console.warn('[RecordingService] onRecordingError:', err);
           this.clearTimers();
           this.isRecording = false;
-          NativeModules.DashSpeech?.setRecording?.(false);
+          NativeModules.DashSpeech?.setRecording?.(false)?.catch?.(() => {});
           const s = useAppStore.getState();
           s.setMode('listening');
           s.setRecordingTrigger(null);
@@ -92,7 +92,7 @@ class RecordingServiceClass {
     } catch (e: any) {
       this.clearTimers();
       this.isRecording = false;
-      NativeModules.DashSpeech?.setRecording?.(false);
+      NativeModules.DashSpeech?.setRecording?.(false)?.catch?.(() => {});
       const s = useAppStore.getState();
       s.setMode('listening');
       s.setRecordingTrigger(null);
@@ -109,7 +109,7 @@ class RecordingServiceClass {
     // Tell SpeedMonitorService the user manually stopped — suppresses retrigger for 60s.
     SpeedMonitorService.notifyManualStop();
     // Notify Kotlin immediately — don't wait for saveClip/mode change.
-    NativeModules.DashSpeech?.setRecording?.(false);
+    NativeModules.DashSpeech?.setRecording?.(false)?.catch?.(() => {});
     this.clearTimers();
     if (!this.cameraRef) {
       // Camera ref lost — force-reset state so user is never stuck on the recording screen.
@@ -156,7 +156,8 @@ class RecordingServiceClass {
     capturedSpeedKmh: number,
     recordingDuration: number,
   ): Promise<void> {
-    this.isRecording = false;
+    // NOTE: isRecording stays true until the finally block to block re-entry from
+    // concurrent speed-drop triggers during the async save (can be 60-480s).
     this.clearTimers();
 
     const store = useAppStore.getState();
@@ -205,12 +206,13 @@ class RecordingServiceClass {
         `Could not save clip: ${e?.message ?? 'Unknown error'}`,
       );
     } finally {
+      this.isRecording = false;
       // Release WakeLock — CPU no longer needs to stay awake after clip is saved.
       NativeModules.DashSpeech?.releaseWakeLock?.()?.catch?.((e: any) =>
         console.warn('[RecordingService] releaseWakeLock failed:', e?.message ?? e),
       );
       // Safety net: ensure Kotlin isRecording is cleared (may already be false from stopEarly).
-      NativeModules.DashSpeech?.setRecording?.(false);
+      NativeModules.DashSpeech?.setRecording?.(false)?.catch?.(() => {});
       const s = useAppStore.getState();
       s.setMode('listening');
       s.setRecordingTrigger(null);

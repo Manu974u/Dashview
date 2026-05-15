@@ -14,7 +14,11 @@ import {RecordingService} from './RecordingService';
 
 const SAMPLE_WINDOW_SIZE = 10; // keep last 10 seconds of samples
 const COOLDOWN_MS = 10_000; // 10 s between triggers
-const MANUAL_STOP_COOLDOWN_MS = 60_000; // 60 s after manual stop before speed-drop can retrigger
+// 60 s after manual stop before speed-drop can retrigger.
+// SAFETY NOTE: this suppresses ALL speed-drop retriggers for 60s, including genuine secondary
+// impacts. Trade-off: 60s prevents most "manual stop → immediate re-trigger" loops.
+// If secondary crash detection in the 0-60s window becomes a requirement, reduce to 15-20s.
+const MANUAL_STOP_COOLDOWN_MS = 60_000;
 
 type ImpactCallback = () => void;
 
@@ -122,7 +126,11 @@ class SpeedMonitorServiceClass {
 
     if (!speedDropDetected) {
       // Drop no longer detectable — re-arm the edge-trigger for the next event.
+      // IMPORTANT: ONLY reset speedDropActive here. Never touch userManuallyStopped
+      // or userManuallyStoppedTimer — those are exclusively managed by notifyManualStop()
+      // and its 60s timer callback.
       this.speedDropActive = false;
+      console.log('[SPEED_MONITOR] speed recovered, re-arming speedDropActive only');
       return;
     }
 
@@ -137,7 +145,7 @@ class SpeedMonitorServiceClass {
     this.lastTriggerTime = now;
     // Snapshot impact speeds into the store so RecordingService can capture
     // them at trigger time for clip metadata (before GPS updates overwrite them).
-    const fromSpeed = this.samples[0]?.speedKmh ?? speedKmh;
+    const fromSpeed = this.samples.reduce((max, s) => Math.max(max, s.speedKmh), speedKmh);
     useAppStore.getState().setCurrentSpeed(speedKmh);
     useAppStore.getState().setLastSpeedDrop({from: fromSpeed, to: speedKmh});
     this.onImpact?.();

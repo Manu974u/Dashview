@@ -80,6 +80,9 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
     // directly and acquires a screen wake lock BEFORE emitting StopDash,
     // ensuring the JS bridge is alive to receive the event.
     @Volatile private var isRecording = false
+    // Prevents double StopDash emission when partial AND final result both match stop phrase.
+    // Reset by startListening() at the start of each new recognition cycle.
+    @Volatile private var stopEmitted = false
 
     // ── WakeLock (held only during active recording, ~65s max) ────────────────
     private var wakeLock: PowerManager.WakeLock? = null
@@ -660,6 +663,7 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
 
     private fun startListening() {
         if (!isRunning) return
+        stopEmitted = false  // re-arm for the next recognition cycle
         try {
             destroyRecognizer()
             val recognizer = Recognizer(voskModel, 16000.0f,
@@ -769,12 +773,25 @@ class SpeechModule(private val reactContext: ReactApplicationContext) :
      * processes the event (critical on Honor 2nd-cycle locked-screen scenario).
      */
     private fun acquireStopWakeLockAndEmit() {
+        // Guard: partial AND final result can both match — only emit once per cycle.
+        if (stopEmitted) return
+        stopEmitted = true
         try {
             if (isRecording) {
-                Log.d(TAG, "StopDash: stopping recording in Kotlin directly")
-                destroyRecognizer()
+                // FIX: destroyRecognizer() must run on recognitionHandler thread (not Vosk audio thread)
+                // to avoid a data race with concurrent startListening() calls.
+                // isRecording is set to false immediately (atomic @Volatile write) so the next
+                // StopDash check in this same cycle is already cleared.
+                Log.d(TAG, "StopDash: scheduling recognizer stop on recognitionHandler thread")
                 isRecording = false
+                recognitionHandler.post { destroyRecognizer() }
             }
+            // TODO: SCREEN_BRIGHT_WAKE_LOCK is deprecated (no-op on API 26+, Android 8+).
+            // On Honor/EMUI with Android 14 (API 34) this may not wake the screen.
+            // If Stop Dash fails on 2nd-cycle locked screen, replace with:
+            //   currentActivity?.setShowWhenLocked(true)
+            //   currentActivity?.setTurnScreenOn(true)
+            // See: bringToForeground() which already uses the Activity approach correctly.
             val pm = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
             val wl = pm.newWakeLock(
                 PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
