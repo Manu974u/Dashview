@@ -8,6 +8,7 @@ import {useAppStore} from '../store/useAppStore';
 import {getCurrentGps} from './LocationService';
 import {buildClipFilename} from '../utils/datetime';
 import {saveClip, ensureClipsDir, enforceClipLimit} from './ClipStorageService';
+import {SpeedMonitorService} from './SpeedMonitorService';
 
 class RecordingServiceClass {
   private cameraRef: Camera | null = null;
@@ -105,6 +106,8 @@ class RecordingServiceClass {
     if (!this.isRecording) {
       return;
     }
+    // Tell SpeedMonitorService the user manually stopped — suppresses retrigger for 60s.
+    SpeedMonitorService.notifyManualStop();
     // Notify Kotlin immediately — don't wait for saveClip/mode change.
     NativeModules.DashSpeech?.setRecording?.(false);
     this.clearTimers();

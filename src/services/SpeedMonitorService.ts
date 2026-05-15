@@ -14,6 +14,7 @@ import {RecordingService} from './RecordingService';
 
 const SAMPLE_WINDOW_SIZE = 10; // keep last 10 seconds of samples
 const COOLDOWN_MS = 10_000; // 10 s between triggers
+const MANUAL_STOP_COOLDOWN_MS = 60_000; // 60 s after manual stop before speed-drop can retrigger
 
 type ImpactCallback = () => void;
 
@@ -26,6 +27,15 @@ class SpeedMonitorServiceClass {
   // BUG 4: track whether we are currently above the speed limit to avoid
   // re-firing the alert every second while the vehicle stays over the limit.
   private wasAboveSpeedLimit = false;
+  // Edge-trigger: true while the current drop event is already active.
+  // Prevents re-firing while the drop stays in the 10-second sample window.
+  // Resets to false once detectSpeedDrop() returns false (speed recovered or
+  // window moved past the event).
+  private speedDropActive = false;
+  // Manual-stop cooldown: set to true when the user explicitly stops recording.
+  // Suppresses speed-drop retriggers for MANUAL_STOP_COOLDOWN_MS (60 s).
+  private userManuallyStopped = false;
+  private userManuallyStoppedTimer: ReturnType<typeof setTimeout> | null = null;
 
   setImpactCallback(cb: ImpactCallback) {
     this.onImpact = cb;
@@ -33,6 +43,25 @@ class SpeedMonitorServiceClass {
 
   setSpeedLimitExceededCallback(cb: () => void) {
     this.onSpeedLimitExceeded = cb;
+  }
+
+  /**
+   * Called by RecordingService when the user manually stops a recording.
+   * Suppresses speed-drop retriggers for 60 seconds so the impact that
+   * caused the recording doesn't immediately restart recording after the
+   * manual stop.
+   */
+  notifyManualStop(): void {
+    this.userManuallyStopped = true;
+    this.speedDropActive = false; // allow re-arm after cooldown
+    if (this.userManuallyStoppedTimer !== null) {
+      clearTimeout(this.userManuallyStoppedTimer);
+    }
+    this.userManuallyStoppedTimer = setTimeout(() => {
+      this.userManuallyStopped = false;
+      this.userManuallyStoppedTimer = null;
+    }, MANUAL_STOP_COOLDOWN_MS);
+    console.log('[SPEED_MONITOR] notifyManualStop: retrigger suppressed for 60s');
   }
 
   start(): void {
@@ -53,6 +82,12 @@ class SpeedMonitorServiceClass {
     this.samples = [];
     this.lastTriggerTime = 0;
     this.wasAboveSpeedLimit = false;
+    this.speedDropActive = false;
+    this.userManuallyStopped = false;
+    if (this.userManuallyStoppedTimer !== null) {
+      clearTimeout(this.userManuallyStoppedTimer);
+      this.userManuallyStoppedTimer = null;
+    }
     useAppStore.getState().setSpeedLimitExceeded(false);
   }
 
@@ -85,15 +120,27 @@ class SpeedMonitorServiceClass {
 
     const speedDropDetected = detectSpeedDrop(this.samples, sensitivity);
 
-    if (speedDropDetected) {
-      this.lastTriggerTime = now;
-      // Snapshot impact speeds into the store so RecordingService can capture
-      // them at trigger time for clip metadata (before GPS updates overwrite them).
-      const fromSpeed = this.samples[0]?.speedKmh ?? speedKmh;
-      useAppStore.getState().setCurrentSpeed(speedKmh);
-      useAppStore.getState().setLastSpeedDrop({from: fromSpeed, to: speedKmh});
-      this.onImpact?.();
+    if (!speedDropDetected) {
+      // Drop no longer detectable — re-arm the edge-trigger for the next event.
+      this.speedDropActive = false;
+      return;
     }
+
+    // Drop detected — apply edge-trigger and manual-stop guards.
+    if (this.speedDropActive || this.userManuallyStopped) {
+      console.log('[SPEED_MONITOR] retrigger blocked - userManuallyStopped or already active');
+      return;
+    }
+
+    // Rising edge: first tick where this drop is detected. Fire once.
+    this.speedDropActive = true;
+    this.lastTriggerTime = now;
+    // Snapshot impact speeds into the store so RecordingService can capture
+    // them at trigger time for clip metadata (before GPS updates overwrite them).
+    const fromSpeed = this.samples[0]?.speedKmh ?? speedKmh;
+    useAppStore.getState().setCurrentSpeed(speedKmh);
+    useAppStore.getState().setLastSpeedDrop({from: fromSpeed, to: speedKmh});
+    this.onImpact?.();
   }
 
   /**
