@@ -1,6 +1,6 @@
 // Green retro-futuristic HUD palette — DashViewCar v1.1+
-// primary:      #015A12  — deep forest green background
-// gradientDark: #012E08  — darkest green for depth
+// primary:      #b5cf8f  — light sage green background
+// gradientDark: #b5cf8f  — background depth layer
 // accent:       #8EDB1F  — lime green accent (main interactive)
 // secondary:    #0B8F2A  — emerald green secondary actions
 // interface:    #6FCF2D  — soft neon green UI elements
@@ -12,7 +12,7 @@
 // Both light and dark resolve to the same HUD palette —
 // the app is always displayed in "dark / tactical" mode.
 export const lightTheme = {
-  background: '#015A12',
+  background: '#b5cf8f',
   backgroundSecondary: '#03440E',
   surface: '#03440E',
   surfaceSecondary: '#012E08',
@@ -36,14 +36,14 @@ export const lightTheme = {
   warning: '#A6F12A',
   error: '#FF1744',
   // Extended green HUD tokens
-  gradientDark: '#012E08',
+  gradientDark: '#b5cf8f',
   secondary: '#0B8F2A',
   panel: '#03440E',
   highlight: '#A6F12A',
 } as const;
 
 export const darkTheme = {
-  background: '#015A12',
+  background: '#b5cf8f',
   backgroundSecondary: '#03440E',
   surface: '#03440E',
   surfaceSecondary: '#012E08',
@@ -67,7 +67,7 @@ export const darkTheme = {
   warning: '#A6F12A',
   error: '#FF1744',
   // Extended green HUD tokens
-  gradientDark: '#012E08',
+  gradientDark: '#b5cf8f',
   secondary: '#0B8F2A',
   panel: '#03440E',
   highlight: '#A6F12A',
